@@ -25,7 +25,7 @@ def estimate_agb(patches, trees, gps_error):
 
     # only works for non rotated triangles
     def in_rectangle(point, vertices):
-        if point[0] >= vertices[0][0] and point[0] <= vertices[1][0] and point[1] >= vertices[0][1] and point[1] <= vertices[3][1]:
+        if point[0] >= vertices[0][0] and point[0] < vertices[1][0] and point[1] >= vertices[0][1] and point[1] < vertices[3][1]:
             return True
         return False
 
