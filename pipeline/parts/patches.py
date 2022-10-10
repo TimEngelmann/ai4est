@@ -1,4 +1,4 @@
-from patchify import patchify
+
 from boundary import make_image
 import numpy as np
 
