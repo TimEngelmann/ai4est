@@ -3,7 +3,6 @@ Script which provides functions that take RGB drone imagery of
 a site as well as labeled field data and provide a masked
 image, showing only the plot for which carbon is measured.
 """
-
 import rasterio
 import rasterio.mask
 import geopandas as gpd

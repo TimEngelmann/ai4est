@@ -1,5 +1,5 @@
 import numpy as np
-
+from parts.boundary import make_image
 
 def make_grid(img_shape : np.ndarray, patch_size : int) -> np.ndarray:
     """
@@ -46,8 +46,8 @@ def save_patches(site:str, patch_size:int, path_to_data:str, path:str):
         path : The path to the folder where patches will be saved
             must be of the form ".../folder_for_patches/"
     """
+    img = make_image(site, path_to_data)
     coords = make_grid(img.shape, patch_size)
-    img = make_image(site)
     padded_img = pad(img, patch_size)
 
     n_rows = img.shape[1] // patch_size
@@ -58,7 +58,7 @@ def save_patches(site:str, patch_size:int, path_to_data:str, path:str):
         for j in range(n_cols):
             x_min, y_min = coords[i, j, 1, :]
             patch = img[:, x_min:(x_min + patch_size), y_min:(y_min + patch_size)]
-            np.save(path + f"{site}_count.np")
+            np.save(path + f"{site}_{count}", patch)
             count += 1
 
 

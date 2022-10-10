@@ -10,11 +10,11 @@ from parts.patches import save_patches
 patch_size = 400
 
 # paths
-path_to_reforestree = "/data/reforestree/"
+path_to_reforestree = "/home/jan/sem1/ai4good/data/reforestree/"
 # TODO :  set path where patches will be saved
-path_to_dataset = "./"
+path_to_dataset = "/home/jan/sem1/ai4good/dataset/"
 
-trees = pd.read_csv('data/reforestree/field_data.csv')
+trees = pd.read_csv(path_to_reforestree + "field_data.csv")
 trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
 for site in trees.site.unique():
