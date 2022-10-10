@@ -35,7 +35,7 @@ def pad(img:np.ndarray, patch_size:int) -> np.ndarray:
     return np.pad(img,((0,0),(0, added_height), (0, added_width)), constant_values=0)
 
 
-def save_patches(site:str, patch_size:int, path:str):
+def save_patches(site:str, patch_size:int, path_to_data:str, path:str):
     """
     Function which takes a site as input, loads the corresponding image,
     splits it into patches and saves the output in the folder
@@ -43,7 +43,10 @@ def save_patches(site:str, patch_size:int, path:str):
     Input:
         site : The site name as found in the field data csv file
         patch_size : The size of the square patches in pixels
+        path_to_data : The path to the reforstree folder containing
+            the raw data, must be of the form ".../reforestree/"
         path : The path to the folder where patches will be saved
+            must be of the form ".../folder_for_patches/"
     """
     coords = make_grid(img.shape, patch_size)
     img = make_image(site)

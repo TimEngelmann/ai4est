@@ -10,17 +10,8 @@ import geopandas as gpd
 import pandas as pd
 import PIL.Image as im
 
-def get_path_to_data():
-    return "/home/jan/sem1/ai4good/data/reforestree/"
-
-def get_raster_path(site):
-    return get_path_to_data() + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
-
-def get_path_to_field_data():
-    return get_path_to_data() + "field_data.csv"
-
-def get_field_data(site:str) -> gpd.GeoDataFrame:
-    field_data = pd.read_csv(get_path_to_field_data())
+def get_field_data(site:str, path_to_data:str) -> gpd.GeoDataFrame:
+    field_data = pd.read_csv(path_to_data + "field_data.csv")
     geo_field_data = gpd.GeoDataFrame(field_data, geometry=gpd.points_from_xy(field_data.lon, field_data.lat))
     return geo_field_data.loc[geo_field_data.site==site].copy()
 
@@ -34,29 +25,30 @@ wwf_name_from_site = {
 }
 
 
-def get_wwf_site_data(site):
+def get_wwf_site_data(site, path_to_data):
     name = wwf_name_from_site_id[site]
-    path = get_path_to_data() + "wwf_ecuador/Merged_final_plots/Merged_final_plots.shp"
+    path = path_to_data + "wwf_ecuador/Merged_final_plots/Merged_final_plots.shp"
     site_data = gpd.read_file(path)
 
     return sites[sites.Name==name]
 
-def create_boundary(site, convex_hull=True):
+def create_boundary(site, path_to_data, convex_hull=True):
 
     if convex_hull:
-        field_data = get_field_data(site)
+        field_data = get_field_data(site, path_to_data)
         boundary = field_data.unary_union.convex_hull
         boundary = gpd.GeoSeries({"geometry" : boundary})
     else:
-        boundary = get_wwf_boundary(site).boundary
+        boundary = get_wwf_boundary(site, path_to_data).boundary
 
     return boundary
 
 
-def make_image(site, rotation=0.0):
-    boundary = create_boundary(site)
+def make_image(site, path_to_data, rotation=0.0):
+    boundary = create_boundary(site, path_to_data)
 
-    with rasterio.open(get_raster_path(site)) as raster:
+    raster_path = path_to_data + f"/wwf_ecuador/RGB Orthomosaics/{site}.tif"
+    with rasterio.open(raster_path) as raster:
         masked_img, _ = rasterio.mask.mask(raster, boundary, crop=True)
 
     if rotation != 0.0:
@@ -66,7 +58,8 @@ def make_image(site, rotation=0.0):
 
 def test():
     name = "Manuel Macias RGB"
-    img = make_masked_image(name)
+    path = "/home/jan/sem1/ai4good/data/reforestree/"
+    img = make_image(name, path)
     pil_img = im.fromarray(img.T)
     pil_img.save("test.png")
 
