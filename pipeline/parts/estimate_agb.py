@@ -3,7 +3,7 @@ import numpy as np
 
 '''
 input
-- patches: pandas df [site, (x1, y1), (x2, y2), (x3, y3), (x4, y4)]
+- patches: pandas df [site, [(x1, y1), (x2, y2), (x3, y3), (x4, y4)]]
 - trees: pandas df [site, x, y, lat, lon, carbon]
 - gps_error: {site: [lon_error, lat_error]}
 
@@ -34,11 +34,9 @@ def estimate_agb(patches, trees, gps_error):
     tree_patch = {}
     for idx_patch, patch in patches.iterrows():
         carbon_patch = 0
-        vertices = np.array([patch.a, patch.b, patch.c, patch.d])
-
         for idx_tree, tree in trees[trees.site == patch.site].iterrows():
             point = np.array((tree.X, tree.Y))
-            if in_rectangle(point, vertices):
+            if in_rectangle(point, patch.vertices):
                 carbon_patch += tree.carbon
                 tree_patch[idx_tree] = idx_patch
         carbon_patches.append(carbon_patch)
@@ -67,9 +65,9 @@ patches_array = []
 for site in gps_error.keys():
     for x in range(3):
         for y in range(3):
-            coordinates = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
-            patches_array.append([site, coordinates[0], coordinates[1], coordinates[2], coordinates[3]])
-patches = pd.DataFrame(patches_array, columns=["site", "a", "b", "c", "d"])
+            vertices = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
+            patches_array.append([site, vertices])
+patches = pd.DataFrame(patches_array, columns=["site", "vertices"])
 
 # run function
 patches_with_label = estimate_agb(patches, trees, gps_error)
