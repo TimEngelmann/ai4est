@@ -34,7 +34,7 @@ def estimate_agb(patches, trees, gps_error):
     tree_patch = {}
     for idx_patch, patch in patches.iterrows():
         carbon_patch = 0
-        vertices = np.array([patch.a, patch.b, patch.c, patch.d])
+        vertices = patch["vertices"]
 
         for idx_tree, tree in trees[trees.site == patch.site].iterrows():
             point = np.array((tree.X, tree.Y))
@@ -49,28 +49,29 @@ def estimate_agb(patches, trees, gps_error):
 
 # Testing function
 
-# import trees
-trees = pd.read_csv('data/reforestree/field_data.csv')
-trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
+if __name__ == "__main__":
+    # import trees
+    trees = pd.read_csv('data/reforestree/field_data.csv')
+    trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
-# import gps error
-gps_error = {"Flora Pluas RGB": [0.25, 0.66],
-            "Nestor Macias RGB": [0.6, 0.53],
-            "Manuel Macias RGB": [0.69, 0.30],
-            "Leonor Aspiazu RGB": [0.47, 0.45],
-            "Carlos Vera Arteaga RGB": [0.26, 0.59],
-            "Carlos Vera Guevara RGB": [0.27, 0.65]}
+    # import gps error
+    gps_error = {"Flora Pluas RGB": [0.25, 0.66],
+                "Nestor Macias RGB": [0.6, 0.53],
+                "Manuel Macias RGB": [0.69, 0.30],
+                "Leonor Aspiazu RGB": [0.47, 0.45],
+                "Carlos Vera Arteaga RGB": [0.26, 0.59],
+                "Carlos Vera Guevara RGB": [0.27, 0.65]}
 
-# create dummy patches
-patch_size = 2000
-patches_array = []
-for site in gps_error.keys():
-    for x in range(3):
-        for y in range(3):
-            coordinates = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
-            patches_array.append([site, coordinates[0], coordinates[1], coordinates[2], coordinates[3]])
-patches = pd.DataFrame(patches_array, columns=["site", "a", "b", "c", "d"])
+    # create dummy patches
+    patch_size = 2000
+    patches_array = []
+    for site in gps_error.keys():
+        for x in range(3):
+            for y in range(3):
+                coordinates = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
+                patches_array.append([site, coordinates[0], coordinates[1], coordinates[2], coordinates[3]])
+    patches = pd.DataFrame(patches_array, columns=["site", "a", "b", "c", "d"])
 
-# run function
-patches_with_label = estimate_agb(patches, trees, gps_error)
-print(patches_with_label)
+    # run function
+    patches_with_label = estimate_agb(patches, trees, gps_error)
+    print(patches_with_label)
