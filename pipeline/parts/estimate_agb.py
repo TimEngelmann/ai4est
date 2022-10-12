@@ -32,6 +32,13 @@ def estimate_agb(patches, trees, gps_error):
     for idx_patch, patch in patches.iterrows():
         window = carbon_distributions[patch.site][patch.vertices[0][1]:patch.vertices[2][1], patch.vertices[0][0]:patch.vertices[2][0]]
         carbon_patch = np.sum(window)
+
+        carbon_patches.append(carbon_patch)
+
+    patches['carbon'] = carbon_patches
+    return patches
+
+if __name__ == "__main__":
     trees = pd.read_csv('data/reforestree/field_data.csv')
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
