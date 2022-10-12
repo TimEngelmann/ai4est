@@ -37,16 +37,19 @@ for site in trees.site.unique():
     """
     boundary = create_boundary(site, path_to_reforestree)
     img_path = path_to_reforestree + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
+
+    #masking the drone image using the boundary
     with rasterio.open(img_path) as raster:
         img, _ = rasterio.mask.mask(raster, boundary, crop=True)
 
-    padded_img = pad(img, patch_size)
-    patches = make_grid(site, padded_img.shape, patch_size)
-    patches = estimate_agb(patches, trees, gps_error)
+    padded_img = pad(img, patch_size) #padding image to make patches even
+    patches = make_grid(site, padded_img.shape, patch_size) #get corners of the patches
+    patches = estimate_agb(patches, trees, gps_error) #compute carbon for the patches
 
     for i,patch in patches.iterrows():
         x_min, y_min = patch["vertices"][1,:]
-        patch_img = padded_img[x_min:(x_min+400), y_min:(y_min+400)]
+        patch_img = padded_img[:, x_min:(x_min+400), y_min:(y_min+400)] #restricting to patch
+        assert patch_img.shape == (4, 400, 400) #sanity check
 
         path = path_to_dataset + f"{site} {i}"
-        np.savez(path, img=patch_img, label=patch["carbon"])
+        np.savez(path, img=patch_img, label=patch["carbon"]) #saving data

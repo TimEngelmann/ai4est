@@ -1,11 +1,18 @@
 import numpy as np
 import pandas as pd
-from parts.boundary import make_image
 
 def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     """
-    Takes as input an RGB image and returns coordinates for tiles
-    in the image
+    Takes as input the shape of a multi-channel image and
+    returns coordinates for tiles in the image.
+    Inputs:
+        site : The name of the site as found in the field
+         data of the reforestree dataset
+        img_shape : The shape of the image with first
+            coordinate representing the channels and the
+            latter coordinates representing space
+        patch_size : The desired size for the square
+            patches
     """
 
     n_rows = img_shape[1] // patch_size
@@ -28,14 +35,29 @@ def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
 
 
 def pad(img:np.ndarray, patch_size:int) -> np.ndarray:
+    """
+    Pads an image so that the pixel width and lengths are
+    divisible by the patch_size, so the patches will be of
+    even size.
+    Inputs:
+        img : Array representing a multi-channel image
+            with channel data in the first coordinate and
+            spatial data in the 2 latter coordinates
+        patch_size : The desired patch size
+    """
     height, width = img.shape[1:3]
+
+    #computing pixels added during padding
     added_height = ((height // patch_size) + 1) * patch_size - height
     added_width = ((width // patch_size) + 1) * patch_size - width
 
-    assert added_height >= 0
-    assert added_width >= 0
+    img = np.pad(img,((0,0),(0, added_height), (0, added_width)), constant_values=0)
 
-    return np.pad(img,((0,0),(0, added_height), (0, added_width)), constant_values=0)
+    #sanity check
+    assert img.shape[1] // patch_size
+    assert img.shape[2] // patch_size
+
+    return img
 
 
 def save_patches(site:str, patch_size:int, path_to_data:str, path:str):
