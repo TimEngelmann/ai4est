@@ -14,43 +14,24 @@ output
 
 def estimate_agb(patches, trees, gps_error):
 
-    # convert gps_error in xy_error
-    xy_error = {}
-    for site in gps_error.keys():
-        trees_site = trees[trees.site == site].sort_values(by="lon")
-        coeff_x = np.polyfit(trees_site.lon, trees_site.X, 1)
-        trees_site = trees_site.sort_values(by="lat")
-        coeff_y = np.polyfit(trees_site.lat, trees_site.Y, 1)
-        xy_error[site] = [abs(coeff_x[0] * gps_error[site][0]), abs(coeff_y[0] * gps_error[site][1])]
+    # calculate carbon distributions with point weights
+    padding = 500
+    carbon_distributions = {}
+    for site in patches.site.unique():
+        max_x = int(np.max(trees.X) + padding)
+        max_y = int(np.max(trees.Y) + padding)
+
+        carbon_distribution = np.zeros((max_y, max_x))
+        trees_site = trees[trees.site == site]
+        for x, y, carbon in zip(trees_site.X, trees_site.Y, trees_site.carbon):
+            carbon_distribution[int(y), int(x)] = carbon
+        carbon_distributions[site] = carbon_distribution
 
     # only works for non rotated triangles
-    def in_rectangle(point, vertices):
-        if point[0] >= vertices[0][0] and point[0] < vertices[1][0] and point[1] >= vertices[0][1] and point[1] < vertices[3][1]:
-            return True
-        return False
-
-    # for all patches sum over all trees in patch
     carbon_patches = []
-    tree_patch = {}
     for idx_patch, patch in patches.iterrows():
-        carbon_patch = 0
-        vertices = np.array([patch.a, patch.b, patch.c, patch.d])
-
-        for idx_tree, tree in trees[trees.site == patch.site].iterrows():
-            point = np.array((tree.X, tree.Y))
-            if in_rectangle(point, patch.vertices):
-                carbon_patch += tree.carbon
-                tree_patch[idx_tree] = idx_patch
-        carbon_patches.append(carbon_patch)
-
-    patches['carbon'] = carbon_patches
-    return patches
-
-
-# Testing function
-
-if __name__ == "__main__":
-    # import trees
+        window = carbon_distributions[patch.site][patch.vertices[0][1]:patch.vertices[2][1], patch.vertices[0][0]:patch.vertices[2][0]]
+        carbon_patch = np.sum(window)
     trees = pd.read_csv('data/reforestree/field_data.csv')
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
