@@ -47,9 +47,9 @@ for site in trees.site.unique():
     patches = estimate_agb(patches, trees, gps_error) #compute carbon for the patches
 
     for i,patch in patches.iterrows():
-        x_min, y_min = patch["vertices"][1,:]
-        patch_img = padded_img[:, x_min:(x_min+400), y_min:(y_min+400)] #restricting to patch
-        assert patch_img.shape == (4, 400, 400) #sanity check
+        x_min, y_min = patch["vertices"][0,:]
+        patch_img = padded_img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
+        assert patch_img.shape == (4, patch_size, patch_size) #sanity check
 
         path = path_to_dataset + f"{site} {i}"
         np.savez(path, img=patch_img, label=patch["carbon"]) #saving data

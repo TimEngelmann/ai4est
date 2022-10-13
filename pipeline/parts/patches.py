@@ -5,6 +5,9 @@ def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     """
     Takes as input the shape of a multi-channel image and
     returns coordinates for tiles in the image.
+    The patches are specified by the four courners in the
+    order [0,0], [patch_size, 0], [patch_size, patch_size],
+    [0, patch_size]
     Inputs:
         site : The name of the site as found in the field
          data of the reforestree dataset
@@ -24,10 +27,10 @@ def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     for i in range(n_rows):
         for j in range(n_cols):
             grid_coords = np.zeros((4, 2), dtype=int)
-            grid_coords[0, :] = np.array([patch_size * (i+1), patch_size * j])
-            grid_coords[1, :] = np.array([patch_size * i, patch_size * j])
-            grid_coords[2, :] = np.array([patch_size * i, patch_size * (j+1)])
-            grid_coords[3, :] = np.array([patch_size * (i+1), patch_size * (j+1)])
+            grid_coords[0, :] = np.array([patch_size * i, patch_size * j])
+            grid_coords[1, :] = np.array([patch_size * (i+1), patch_size * j])
+            grid_coords[2, :] = np.array([patch_size * (i+1), patch_size * (j+1)])
+            grid_coords[3, :] = np.array([patch_size * i, patch_size * (j+1)])
 
             patches.loc[len(patches.index)] = [site, grid_coords]
 
