@@ -32,7 +32,6 @@ def estimate_agb(patches, trees, gps_error):
     for idx_patch, patch in patches.iterrows():
         window = carbon_distributions[patch.site][patch.vertices[0][1]:patch.vertices[2][1], patch.vertices[0][0]:patch.vertices[2][0]]
         carbon_patch = np.sum(window)
-
         carbon_patches.append(carbon_patch)
 
     patches['carbon'] = carbon_patches
@@ -56,9 +55,9 @@ if __name__ == "__main__":
     for site in gps_error.keys():
         for x in range(3):
             for y in range(3):
-                coordinates = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
-                patches_array.append([site, coordinates[0], coordinates[1], coordinates[2], coordinates[3]])
-    patches = pd.DataFrame(patches_array, columns=["site", "a", "b", "c", "d"])
+                vertices = np.array([(x,y), (x+1,y), (x+1,y+1), (x,y+1)]) * patch_size
+                patches_array.append([site, vertices])
+    patches = pd.DataFrame(patches_array, columns=["site", "vertices"])
     # run function
     patches_with_label = estimate_agb(patches, trees, gps_error)
     print(patches_with_label)
