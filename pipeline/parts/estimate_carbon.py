@@ -35,7 +35,7 @@ def estimate_carbon(patches, trees, gps_error):
         max_y = int(np.max(trees_site.Y) + padding)
         carbon_distribution = np.zeros((max_y, max_x))
 
-        for idx, tree in trees_site.iterrows():
+        for idx, tree in trees_site[trees_site.carbon < 50].iterrows():
             gaussian_tree = gaussian * tree.carbon
 
             start_x = int(tree.X - max_x_tree/2)
