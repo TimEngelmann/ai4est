@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+from scipy.stats import multivariate_normal
+
+from helper.constants import get_gps_error
+
 '''
 input
 - patches: pandas df [site, [(x1, y1), (x2, y2), (x3, y3), (x4, y4)]]
@@ -14,17 +18,40 @@ output
 
 def estimate_carbon(patches, trees, gps_error):
 
-    # calculate carbon distributions with point weights
-    padding = 500
+    # calculate carbon distributions with gaussian distribution
     carbon_distributions = {}
-    for site in patches.site.unique():
-        max_x = int(np.max(trees.X) + padding)
-        max_y = int(np.max(trees.Y) + padding)
+    for site in gps_error.keys():
+        sigma_multiple = 10
+        max_x_tree = int(sigma_multiple * np.sqrt(gps_error[site][0]))
+        max_y_tree = int(sigma_multiple * np.sqrt(gps_error[site][1]))
+        y_range, x_range = np.mgrid[0:max_y_tree, 0:max_x_tree]
+        pos = np.dstack((y_range, x_range))
+        rv = multivariate_normal([max_y_tree/2, max_x_tree/2], [[gps_error[site][1], 0], [0, gps_error[site][0]]])
+        gaussian = rv.pdf(pos)
 
-        carbon_distribution = np.zeros((max_y, max_x))
+        padding = 300
         trees_site = trees[trees.site == site]
-        for x, y, carbon in zip(trees_site.X, trees_site.Y, trees_site.carbon):
-            carbon_distribution[int(y), int(x)] = carbon
+        max_x = int(np.max(trees_site.X) + padding)
+        max_y = int(np.max(trees_site.Y) + padding)
+        carbon_distribution = np.zeros((max_y, max_x))
+
+        for idx, tree in trees_site.iterrows():
+            gaussian_tree = gaussian * tree.carbon
+
+            start_x = int(tree.X - max_x_tree/2)
+            start_y = int(tree.Y - max_y_tree/2)
+            end_x = int(tree.X + max_x_tree/2)
+            end_y = int(tree.Y + max_y_tree/2)
+            if (start_x < 0):
+                gaussian_tree = gaussian_tree[:, abs(start_x):]
+            if (start_y < 0):
+                gaussian_tree = gaussian_tree[abs(start_y):, :]
+            if (end_x > max_x):
+                gaussian_tree = gaussian_tree[:, :max_x_tree - (end_x - max_x)]
+            if (end_y > max_y):
+                gaussian_tree = gaussian_tree[:max_y_tree - (end_y - max_y), :]
+
+            carbon_distribution[max(start_y, 0):min(end_y, max_y), max(start_x, 0):min(end_x, max_x)] += gaussian_tree
         carbon_distributions[site] = carbon_distribution
 
     # only works for non rotated triangles
@@ -41,13 +68,8 @@ if __name__ == "__main__":
     trees = pd.read_csv('data/reforestree/field_data.csv')
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
-    # import gps error
-    gps_error = {"Flora Pluas RGB": [0.25, 0.66],
-                "Nestor Macias RGB": [0.6, 0.53],
-                "Manuel Macias RGB": [0.69, 0.30],
-                "Leonor Aspiazu RGB": [0.47, 0.45],
-                "Carlos Vera Arteaga RGB": [0.26, 0.59],
-                "Carlos Vera Guevara RGB": [0.27, 0.65]}
+    # gps_error: {site: [lon_error, lat_error]}
+    gps_error = get_gps_error()
 
     # create dummy patches
     patch_size = 2000

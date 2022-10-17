@@ -6,17 +6,13 @@ import rasterio
 from parts.patches import make_grid, pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import estimate_carbon
+from parts.helper.constants import get_gps_error
 
 # hyperparameters
 patch_size = 400
 
 #import gps error
-gps_error = {"Flora Pluas RGB": [0.25, 0.66],
-            "Nestor Macias RGB": [0.6, 0.53],
-            "Manuel Macias RGB": [0.69, 0.30],
-            "Leonor Aspiazu RGB": [0.47, 0.45],
-            "Carlos Vera Arteaga RGB": [0.26, 0.59],
-            "Carlos Vera Guevara RGB": [0.27, 0.65]}
+gps_error = get_gps_error()
 
 # TODO : set path to reforestree folder
 path_to_reforestree = "/home/jan/sem1/ai4good/data/reforestree/"
