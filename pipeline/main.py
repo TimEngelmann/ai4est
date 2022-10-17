@@ -5,7 +5,7 @@ import numpy as np
 import rasterio
 from parts.patches import make_grid, pad
 from parts.boundary import create_boundary
-from parts.estimate_agb import estimate_agb
+from parts.estimate_carbon import estimate_carbon
 
 # hyperparameters
 patch_size = 400
@@ -44,7 +44,7 @@ for site in trees.site.unique():
 
     padded_img = pad(img, patch_size) #padding image to make patches even
     patches = make_grid(site, padded_img.shape, patch_size) #get corners of the patches
-    patches = estimate_agb(patches, trees, gps_error) #compute carbon for the patches
+    patches = estimate_carbon(patches, trees, gps_error) #compute carbon for the patches
 
     for i,patch in patches.iterrows():
         x_min, y_min = patch["vertices"][0,:]

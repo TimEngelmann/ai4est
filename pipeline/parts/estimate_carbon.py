@@ -12,7 +12,7 @@ output
 
 '''
 
-def estimate_agb(patches, trees, gps_error):
+def estimate_carbon(patches, trees, gps_error):
 
     # calculate carbon distributions with point weights
     padding = 500
@@ -59,5 +59,5 @@ if __name__ == "__main__":
                 patches_array.append([site, vertices])
     patches = pd.DataFrame(patches_array, columns=["site", "vertices"])
     # run function
-    patches_with_label = estimate_agb(patches, trees, gps_error)
+    patches_with_label = estimate_carbon(patches, trees, gps_error)
     print(patches_with_label)
