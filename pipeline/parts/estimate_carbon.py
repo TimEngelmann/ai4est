@@ -86,7 +86,7 @@ def estimate_carbon(patches, trees, gps_error):
             rotated_distribution = rotate(carbon_distributions[site], angle, reshape=True) if angle != 0 else carbon_distributions[site]
             for idx_patch, patch in patches_slice.iterrows():
                 vertices = patch.vertices_transformed
-                window = rotated_distribution[vertices[0][1]:vertices[2][1], vertices[0][0]:vertices[2][0]]
+                window = rotated_distribution[max(0, vertices[0][1]):vertices[2][1], max(0,vertices[0][0]):vertices[2][0]]
                 carbon_patch = np.sum(window)
                 carbon_patches.append(carbon_patch)
     patches['carbon'] = carbon_patches
