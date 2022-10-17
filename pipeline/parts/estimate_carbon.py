@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from scipy.stats import multivariate_normal
+from scipy.ndimage import rotate
 
 from helper.constants import get_gps_error
 
@@ -54,13 +55,40 @@ def estimate_carbon(patches, trees, gps_error):
             carbon_distribution[max(start_y, 0):min(end_y, max_y), max(start_x, 0):min(end_x, max_x)] += gaussian_tree
         carbon_distributions[site] = carbon_distribution
 
-    # only works for non rotated triangles
-    carbon_patches = []
-    for idx_patch, patch in patches.iterrows():
-        window = carbon_distributions[patch.site][patch.vertices[0][1]:patch.vertices[2][1], patch.vertices[0][0]:patch.vertices[2][0]]
-        carbon_patch = np.sum(window)
-        carbon_patches.append(carbon_patch)
+    # determine if patches are rotated by an angle
+    angles = []
+    vertices_transformed_array = []
+    for idx, patch in patches.iterrows():
+        lower_border = patch.vertices[1] - patch.vertices[0]
+        angle = np.arctan(lower_border[1]/lower_border[0])
+        angles.append(angle)
 
+        A = np.array([[np.cos(-angle), - np.sin(-angle)], [np.sin(-angle), np.cos(-angle)]])
+        h = carbon_distributions[patch.site].shape[0]
+        w = carbon_distributions[patch.site].shape[1]
+        offset1 = np.array([w, h])
+        w2 = np.rint(np.dot(offset1, np.array([np.cos(angle), np.sin(angle)])))
+        h2 = np.rint(np.dot(offset1, np.array([np.sin(angle), np.cos(angle)])))
+        offset2 = np.array([w2, h2])
+
+        vertices_transformed = [np.dot(A, coordinate - 0.5 * offset1) + 0.5 * offset2 for coordinate in patch.vertices]
+        vertices_transformed_array.append(np.rint(vertices_transformed).astype(int))
+    patches["angle"] = np.rad2deg(angles)
+    patches["vertices_transformed"] = vertices_transformed_array
+
+    # sum up over window size
+    patches = patches.sort_values(by=['site', 'angle'])
+    patches.angle = np.round_(patches.angle, decimals=1)
+    carbon_patches = []
+    for site in patches.site.unique():
+        for angle in patches[patches.site == site].angle.unique():
+            patches_slice = patches[(patches.site == site) & (patches.angle == angle)]
+            rotated_distribution = rotate(carbon_distributions[site], angle, reshape=True) if angle != 0 else carbon_distributions[site]
+            for idx_patch, patch in patches_slice.iterrows():
+                vertices = patch.vertices_transformed
+                window = rotated_distribution[vertices[0][1]:vertices[2][1], vertices[0][0]:vertices[2][0]]
+                carbon_patch = np.sum(window)
+                carbon_patches.append(carbon_patch)
     patches['carbon'] = carbon_patches
     return patches
 
