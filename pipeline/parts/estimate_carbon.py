@@ -90,6 +90,7 @@ def estimate_carbon(patches, trees, gps_error):
                 carbon_patch = np.sum(window)
                 carbon_patches.append(carbon_patch)
     patches['carbon'] = carbon_patches
+    patches = patches.sort_index()
     return patches
 
 if __name__ == "__main__":
