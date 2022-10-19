@@ -52,7 +52,7 @@ def train(model, train_dataloader, optimizer, epoch, log_interval, device):
         # If loss is under a small value ε, stop the training process
         epsilon = 1e-5
         if loss < epsilon:
-            break
+            return true
 
 
 if __name__ == '__main__':
@@ -79,6 +79,8 @@ if __name__ == '__main__':
     # Training the model for epochs amount of epochs.
     epochs = 50
     for epoch in range(1, epochs + 1):
-        train(model, trdl, optimizer, epoch, log_interval=1, device=device)
+        flag = train(model, train_dl, optimizer, epoch, log_interval=1)
+        if flag:
+            break
         # test(model, tsdl)
         scheduler.step()
