@@ -3,6 +3,7 @@ import numpy as np
 
 from scipy.stats import multivariate_normal
 from scipy.ndimage import rotate
+import imutils
 
 from helper.constants import get_gps_error
 
@@ -67,8 +68,8 @@ def estimate_carbon(patches, trees, gps_error):
         h = carbon_distributions[patch.site].shape[0]
         w = carbon_distributions[patch.site].shape[1]
         offset1 = np.array([w, h])
-        w2 = np.rint(np.dot(offset1, np.array([np.cos(angle), np.sin(angle)])))
-        h2 = np.rint(np.dot(offset1, np.array([np.sin(angle), np.cos(angle)])))
+        w2 = int(np.dot(offset1, np.array([np.cos(angle), np.sin(angle)])))
+        h2 = int(np.dot(offset1, np.array([np.sin(angle), np.cos(angle)])))
         offset2 = np.array([w2, h2])
 
         vertices_transformed = [np.dot(A, coordinate - 0.5 * offset1) + 0.5 * offset2 for coordinate in patch.vertices]
@@ -83,7 +84,7 @@ def estimate_carbon(patches, trees, gps_error):
     for site in patches.site.unique():
         for angle in patches[patches.site == site].angle.unique():
             patches_slice = patches[(patches.site == site) & (patches.angle == angle)]
-            rotated_distribution = rotate(carbon_distributions[site], angle, reshape=True) if angle != 0 else carbon_distributions[site]
+            rotated_distribution = imutils.rotate_bound(carbon_distributions[site], -angle) if angle != 0 else carbon_distributions[site]
             for idx_patch, patch in patches_slice.iterrows():
                 vertices = patch.vertices_transformed
                 window = rotated_distribution[max(0, vertices[0][1]):vertices[2][1], max(0,vertices[0][0]):vertices[2][0]]
