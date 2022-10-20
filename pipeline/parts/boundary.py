@@ -66,18 +66,6 @@ def create_boundary(site:str, path_to_data:str, convex_hull=True):
     return boundary
 
 
-def make_image(site, path_to_data, rotation=0.0):
-    boundary = create_boundary(site, path_to_data)
-
-    raster_path = path_to_data + f"/wwf_ecuador/RGB Orthomosaics/{site}.tif"
-    with rasterio.open(raster_path) as raster:
-        masked_img, _ = rasterio.mask.mask(raster, boundary, crop=True)
-
-    if rotation != 0.0:
-        raise NotImplementedError("Rotations not implemented")
-
-    return masked_img
-
 def test():
     name = "Manuel Macias RGB"
     path = "/home/jan/sem1/ai4good/data/reforestree/"

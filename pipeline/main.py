@@ -3,12 +3,15 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import rasterio
-from parts.patches import make_grid, pad
+from parts.patches import make_grid, pad, convert_coordinates_to_df, remove_out_of_bounds
 from parts.boundary import create_boundary
 from parts.estimate_agb import estimate_agb
+from parts.rotate import rotate_grid, rotate_img
 
 # hyperparameters
 patch_size = 400
+angle = 30
+n_rotations = 360 // angle
 
 #import gps error
 gps_error = {"Flora Pluas RGB": [0.25, 0.66],
@@ -35,21 +38,35 @@ for site in trees.site.unique():
     Finally the image and carbon stock are saved
     together in a compressed numpy file (.npz).
     """
+    print(f"Creating data for site {site}")
+
     boundary = create_boundary(site, path_to_reforestree)
     img_path = path_to_reforestree + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
 
     #masking the drone image using the boundary
     with rasterio.open(img_path) as raster:
-        img, _ = rasterio.mask.mask(raster, boundary, crop=True)
+        img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
-    padded_img = pad(img, patch_size) #padding image to make patches even
-    patches = make_grid(site, padded_img.shape, patch_size) #get corners of the patches
-    patches = estimate_agb(patches, trees, gps_error) #compute carbon for the patches
+    img = pad(img, patch_size) #padding image to make patches even
+    grid_coords = make_grid(img.shape, patch_size) #get corners of the patches
 
-    for i,patch in patches.iterrows():
-        x_min, y_min = patch["vertices"][0,:]
-        patch_img = padded_img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
-        assert patch_img.shape == (4, patch_size, patch_size) #sanity check
+    for i in range(n_rotations):
+        print(f"Creating patches with rotation angle {i*angle}")
+        #rotate the grid
+        rotated_coords = rotate_grid(grid_coords, angle, img.shape)
+        filtered_coords = remove_out_of_bounds(rotated_coords, img.shape)
+        patches = convert_coordinates_to_df(filtered_coords, site) #convert grid array to patches df
+        patches = estimate_agb(patches, trees, gps_error)
 
-        path = path_to_dataset + f"{site} {i}"
-        np.savez(path, img=patch_img, label=patch["carbon"]) #saving data
+        #rotate the image
+
+        for j, patch in patches.iterrows():
+            x_min, y_min = patch["vertices"].astype(int)[0,:]
+            patch_img = img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
+            assert patch_img.shape == (4, patch_size, patch_size) #sanity check
+
+            path = path_to_dataset + f"{site} rotation {i * angle}_{j}"
+            np.savez(path, img=patch_img, label=patch["carbon"], vertices=patch["vertices"]) #saving data
+
+        print("Rotating image")
+        img = rotate_img(img, angle)

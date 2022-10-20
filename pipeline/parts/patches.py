@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
+def make_grid(img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     """
     Takes as input the shape of a multi-channel image and
     returns coordinates for tiles in the image.
@@ -9,8 +9,6 @@ def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     order [0,0], [patch_size, 0], [patch_size, patch_size],
     [0, patch_size]
     Inputs:
-        site : The name of the site as found in the field
-         data of the reforestree dataset
         img_shape : The shape of the image with first
             coordinate representing the channels and the
             latter coordinates representing space
@@ -24,18 +22,39 @@ def make_grid(site:str, img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     patches = pd.DataFrame([], columns=["site", "vertices"])
 
     count = 0
+    grid_coords = np.zeros((n_rows*n_cols, 4, 2))
     for i in range(n_rows):
         for j in range(n_cols):
-            grid_coords = np.zeros((4, 2), dtype=int)
-            grid_coords[0, :] = np.array([patch_size * i, patch_size * j])
-            grid_coords[1, :] = np.array([patch_size * (i+1), patch_size * j])
-            grid_coords[2, :] = np.array([patch_size * (i+1), patch_size * (j+1)])
-            grid_coords[3, :] = np.array([patch_size * i, patch_size * (j+1)])
+            grid_coords[n_cols * i + j, 0, :] = np.array([patch_size * i, patch_size * j])
+            grid_coords[n_cols * i + j, 1, :] = np.array([patch_size * (i+1), patch_size * j])
+            grid_coords[n_cols * i + j, 2, :] = np.array([patch_size * (i+1), patch_size * (j+1)])
+            grid_coords[n_cols * i + j, 3, :] = np.array([patch_size * i, patch_size * (j+1)])
 
-            patches.loc[len(patches.index)] = [site, grid_coords]
+    return grid_coords.astype(int)
+
+def convert_coordinates_to_df(grid_coords:np.array, site:str) -> pd.DataFrame:
+    """
+    Takes an 3d numpy array of shape n_patches x 4 x 2
+    which contains the 4 vertices of each patch and turns
+    it into a pandas DataFrame with each row containing
+    the name of the site and the a 4 x 2 numpy array
+    containing the vertices of each patch, as required by
+    the estimate_agb function
+    Inputs:
+        grid_coords : The array containing the vertices.
+            Should be of shape n x 4 x 2.
+        site : The name of the site
+    Returns:
+        pd.DataFrame : The dataframe containing a row for
+            each patch with the site name and vertices
+            as 4 x 2 array.
+    """
+    n_patches = grid_coords.shape[0]
+    patches = pd.DataFrame([], columns=["site", "vertices"])
+    patches["vertices"] = pd.Series([grid_coords[i,] for i in range(n_patches)])
+    patches["site"] = site
 
     return patches
-
 
 def pad(img:np.ndarray, patch_size:int) -> np.ndarray:
     """
@@ -62,35 +81,35 @@ def pad(img:np.ndarray, patch_size:int) -> np.ndarray:
 
     return img
 
-
-def save_patches(site:str, patch_size:int, path_to_data:str, path:str):
+def remove_out_of_bounds(grid_coords:np.array, img_shape:tuple) -> np.array:
     """
-    Function which takes a site as input, loads the corresponding image,
-    splits it into patches and saves the output in the folder
-    specified by path.
-    Input:
-        site : The site name as found in the field data csv file
-        patch_size : The size of the square patches in pixels
-        path_to_data : The path to the reforstree folder containing
-            the raw data, must be of the form ".../reforestree/"
-        path : The path to the folder where patches will be saved
-            must be of the form ".../folder_for_patches/"
+    Removes the patches for which any coordinate is
+    outside the image.
     """
-    img = make_image(site, path_to_data)
-    coords = make_grid(img.shape, patch_size)
-    padded_img = pad(img, patch_size)
+    shape = np.array(img_shape[1:])
+    n_patches = grid_coords.shape[0]
+    upper_bounds = np.tile(shape, n_patches * 4).reshape(n_patches, 4, 2)
+    inbounds =  (0 <= grid_coords) & (grid_coords <= upper_bounds)
+    inbounds_patchwise = inbounds.all(axis=(1,2))
 
-    n_rows = img.shape[1] // patch_size
-    n_cols = img.shape[2] // patch_size
+    return grid_coords[inbounds_patchwise,:,:]
 
-    count = 0
-    for i in range(n_rows):
-        for j in range(n_cols):
-            x_min, y_min = coords[i, j, 1, :]
-            patch = img[:, x_min:(x_min + patch_size), y_min:(y_min + patch_size)]
-            np.save(path + f"{site}_{count}", patch)
-            count += 1
+def filter_grid(grid_coords:np.array, img:np.array) -> np.array:
+    """
+    Takes the coords of the patches and the image and
+    filters out empty patches
+    Inputs:
+        grid_coords : An n x 4 x 2 array with n the number
+            of patches.
+        img : The image as an array of the form C x H x W
+    Return:
+        np.array : Same shape as grid_coords, but the empty
+            patches are removed.
+    """
 
+
+
+    raise NotImplementedError()
 
 def test():
     patch_size = 400
