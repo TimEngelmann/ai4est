@@ -7,6 +7,7 @@ from parts.patches import create_upper_left, pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.rotate import rotate_distribution, rotate_img
+from parts.helper.constants import get_gps_error
 
 # hyperparameters
 patch_size = 400
@@ -14,12 +15,7 @@ angle = 30
 n_rotations = 360 // angle
 
 #import gps error
-gps_error = {"Flora Pluas RGB": [0.25, 0.66],
-            "Nestor Macias RGB": [0.6, 0.53],
-            "Manuel Macias RGB": [0.69, 0.30],
-            "Leonor Aspiazu RGB": [0.47, 0.45],
-            "Carlos Vera Arteaga RGB": [0.26, 0.59],
-            "Carlos Vera Guevara RGB": [0.27, 0.65]}
+gps_error = get_gps_error()
 
 # TODO : set path to reforestree folder
 path_to_reforestree = "/home/jan/sem1/ai4good/data/reforestree/"
