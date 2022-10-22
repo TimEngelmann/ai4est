@@ -3,13 +3,16 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import rasterio
-from parts.patches import make_grid, pad
+from parts.patches import create_upper_left, pad
 from parts.boundary import create_boundary
-from parts.estimate_carbon import estimate_carbon
+from parts.estimate_carbon import compute_carbon_distribution
+from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
 
 # hyperparameters
 patch_size = 400
+angle = 30
+n_rotations = 360 // angle
 
 #import gps error
 gps_error = get_gps_error()
@@ -31,21 +34,31 @@ for site in trees.site.unique():
     Finally the image and carbon stock are saved
     together in a compressed numpy file (.npz).
     """
+    print(f"Creating data for site {site}")
+
     boundary = create_boundary(site, path_to_reforestree)
     img_path = path_to_reforestree + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
 
     #masking the drone image using the boundary
     with rasterio.open(img_path) as raster:
-        img, _ = rasterio.mask.mask(raster, boundary, crop=True)
+        img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
-    padded_img = pad(img, patch_size) #padding image to make patches even
-    patches = make_grid(site, padded_img.shape, patch_size) #get corners of the patches
-    patches = estimate_carbon(patches, trees, gps_error) #compute carbon for the patches
+    img = pad(img, patch_size) #padding image to make patches even
+    carbon_distribution = compute_carbon_distribution(site, img.shape, trees, gps_error)
+    upper_left = create_upper_left(img.shape, patch_size) #get corners of the patches
 
-    for i,patch in patches.iterrows():
-        x_min, y_min = patch["vertices"][0,:]
-        patch_img = padded_img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
-        assert patch_img.shape == (4, patch_size, patch_size) #sanity check
+    for i in range(n_rotations):
+        print(f"Creating patches with rotation angle {i*angle}")
 
-        path = path_to_dataset + f"{site} {i}"
-        np.savez(path, img=patch_img, label=patch["carbon"]) #saving data
+        for j in range(upper_left.shape[0]):
+            x_min, y_min = upper_left[j, :]
+            patch_img = img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
+            carbon = carbon_distribution[x_min:(x_min+patch_size),y_min:(y_min+patch_size)].sum()
+            assert patch_img.shape == (4, patch_size, patch_size) #sanity check
+
+            path = path_to_dataset + f"{site} rotation {i * angle}_{j}"
+            np.savez(path, img=patch_img, label=carbon, upper_left=upper_left[j,:])
+
+        print("Rotating image")
+        img = rotate_img(img, angle)
+        carbon_distribution = rotate_distribution(carbon_distribution, angle)
