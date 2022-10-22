@@ -3,10 +3,10 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import rasterio
-from parts.patches import make_grid, pad, convert_coordinates_to_df, remove_out_of_bounds
+from parts.patches import create_upper_left, pad
 from parts.boundary import create_boundary
-from parts.estimate_agb import estimate_agb
-from parts.rotate import rotate_grid, rotate_img
+from parts.estimate_carbon import compute_carbon_distribution
+from parts.rotate import rotate_distribution, rotate_img
 
 # hyperparameters
 patch_size = 400
@@ -48,25 +48,21 @@ for site in trees.site.unique():
         img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
     img = pad(img, patch_size) #padding image to make patches even
-    grid_coords = make_grid(img.shape, patch_size) #get corners of the patches
+    carbon_distribution = compute_carbon_distribution(site, img.shape, trees, gps_error)
+    upper_left = create_upper_left(img.shape, patch_size) #get corners of the patches
 
     for i in range(n_rotations):
         print(f"Creating patches with rotation angle {i*angle}")
-        #rotate the grid
-        rotated_coords = rotate_grid(grid_coords, angle, img.shape)
-        filtered_coords = remove_out_of_bounds(rotated_coords, img.shape)
-        patches = convert_coordinates_to_df(filtered_coords, site) #convert grid array to patches df
-        patches = estimate_agb(patches, trees, gps_error)
 
-        #rotate the image
-
-        for j, patch in patches.iterrows():
-            x_min, y_min = patch["vertices"].astype(int)[0,:]
+        for j in range(upper_left.shape[0]):
+            x_min, y_min = upper_left[j, :]
             patch_img = img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
+            carbon = carbon_distribution[x_min:(x_min+patch_size),y_min:(y_min+patch_size)].sum()
             assert patch_img.shape == (4, patch_size, patch_size) #sanity check
 
             path = path_to_dataset + f"{site} rotation {i * angle}_{j}"
-            np.savez(path, img=patch_img, label=patch["carbon"], vertices=patch["vertices"]) #saving data
+            np.savez(path, img=patch_img, label=carbon, upper_left=upper_left[j,:])
 
         print("Rotating image")
         img = rotate_img(img, angle)
+        carbon_distribution = rotate_distribution(carbon_distribution, angle)

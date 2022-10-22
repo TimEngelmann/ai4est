@@ -1,6 +1,30 @@
 import numpy as np
 import pandas as pd
 
+def create_upper_left(img_shape:np.ndarray, patch_size:int) -> np.ndarray:
+    """
+    Takes as input the shape of a multi-channel image and
+    returns the upper left corner of each patch.
+    Inputs:
+        img_shape : The shape of the image with first
+            coordinate representing the channels and the
+            latter coordinates representing space
+        patch_size : The desired size for the square
+            patches
+    """
+
+    n_rows = img_shape[1] // patch_size
+    n_cols = img_shape[2] // patch_size
+
+    count = 0
+    grid_coords = np.zeros((n_rows*n_cols, 2))
+    for i in range(n_rows):
+        for j in range(n_cols):
+            grid_coords[n_cols * i + j, :] = np.array([patch_size * i, patch_size * j])
+
+    return grid_coords.astype(int)
+
+
 def make_grid(img_shape:np.ndarray, patch_size:int) -> np.ndarray:
     """
     Takes as input the shape of a multi-channel image and

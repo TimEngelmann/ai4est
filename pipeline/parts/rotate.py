@@ -75,10 +75,13 @@ def get_edge_points(img_shape:tuple) -> np.array:
 
     return edge_points
 
-def rotate_img(img, angle, center):
+def rotate_img(img, angle):
+    center = (np.array(img.shape[1:]) - 1) / 2
     return np.moveaxis(imutils.rotate(np.moveaxis(img, 0, -1), angle, center=center), -1, 0)
 
-
+def rotate_distribution(d, angle):
+    center = np.array(d.shape) - 1 / 2
+    return imutils.rotate(d, angle, center)
 
 
 
