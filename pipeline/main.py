@@ -80,6 +80,8 @@ for site in trees.site.unique():
         imgs = make_imgs_site(img, upper_left)
         carbon = compute_carbon_site(carbon_distribution, upper_left)
 
+        assert carbon.sum() != 0
+
         sitename_nospaces = site.replace(" ", "")
         path = path_to_dataset + f"{sitename_nospaces}_{i * angle}"
         np.savez_compressed(path, site=site, rotation=i*angle, carbon=carbon, *imgs)

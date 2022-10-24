@@ -80,7 +80,7 @@ def rotate_img(img, angle):
     return np.moveaxis(imutils.rotate(np.moveaxis(img, 0, -1), angle, center=center), -1, 0)
 
 def rotate_distribution(d, angle):
-    center = np.array(d.shape) - 1 / 2
+    center = (np.array(d.shape) - 1) / 2
     return imutils.rotate(d, angle, center)
 
 
