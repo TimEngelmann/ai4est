@@ -25,15 +25,41 @@ path_to_dataset = "/home/jan/sem1/ai4good/dataset/"
 trees = pd.read_csv(path_to_reforestree + "field_data.csv")
 trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
-for site in trees.site.unique():
+def make_imgs_site(img, upper_left):
     """
-    We loop over the sites and for each site load the image,
+    For a given site we load the image,
     restrict it with the boundary created from the field data.
     Then the image is padded and split into patches, for
     which we then estimate the carbon stock.
     Finally the image and carbon stock are saved
     together in a compressed numpy file (.npz).
     """
+
+    for j in range(upper_left.shape[0]):
+        x_min, y_min = upper_left[j, :]
+        patch_img = img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
+        carbon = carbon_distribution[x_min:(x_min+patch_size),y_min:(y_min+patch_size)].sum()
+        assert patch_img.shape == (4, patch_size, patch_size) #sanity check
+
+        yield patch_img
+
+def compute_carbon_site(carbon_distribution, upper_left):
+    """
+    For a given site we load the image,
+    restrict it with the boundary created from the field data.
+    Then the image is padded and split into patches, for
+    which we then estimate the carbon stock.
+    Finally the image and carbon stock are saved
+    together in a compressed numpy file (.npz).
+    """
+    carbon = np.empty(upper_left.shape[0])
+    for j in range(upper_left.shape[0]):
+        x_min, y_min = upper_left[j, :]
+        carbon[j] = carbon_distribution[x_min:(x_min+patch_size),y_min:(y_min+patch_size)].sum()
+
+    return carbon
+
+for site in trees.site.unique():
     print(f"Creating data for site {site}")
 
     boundary = create_boundary(site, path_to_reforestree)
@@ -45,19 +71,18 @@ for site in trees.site.unique():
 
     img = pad(img, patch_size) #padding image to make patches even
     carbon_distribution = compute_carbon_distribution(site, img.shape, trees, gps_error)
+    assert img.shape[1:] == carbon_distribution.shape
+
     upper_left = create_upper_left(img.shape, patch_size) #get corners of the patches
 
     for i in range(n_rotations):
         print(f"Creating patches with rotation angle {i*angle}")
+        imgs = make_imgs_site(img, upper_left)
+        carbon = compute_carbon_site(carbon_distribution, upper_left)
 
-        for j in range(upper_left.shape[0]):
-            x_min, y_min = upper_left[j, :]
-            patch_img = img[:, x_min:(x_min+patch_size), y_min:(y_min+patch_size)] #restricting to patch
-            carbon = carbon_distribution[x_min:(x_min+patch_size),y_min:(y_min+patch_size)].sum()
-            assert patch_img.shape == (4, patch_size, patch_size) #sanity check
-
-            path = path_to_dataset + f"{site} rotation {i * angle}_{j}"
-            np.savez(path, img=patch_img, label=carbon, upper_left=upper_left[j,:])
+        sitename_nospaces = site.replace(" ", "")
+        path = path_to_dataset + f"{sitename_nospaces}_{i * angle}"
+        np.savez_compressed(path, site=site, rotation=i*angle, carbon=carbon, *imgs)
 
         print("Rotating image")
         img = rotate_img(img, angle)
