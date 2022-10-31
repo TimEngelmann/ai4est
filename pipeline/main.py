@@ -8,6 +8,8 @@ from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
+from parts.data_split import train_val_test_dataloader
+from torchvision.transforms import ToTensor
 
 # hyperparameters
 patch_size = 400
@@ -89,3 +91,13 @@ for site in trees.site.unique():
         print("Rotating image")
         img = rotate_img(img, angle)
         carbon_distribution = rotate_distribution(carbon_distribution, angle)
+
+
+# train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset, method="across_sites",
+#                                                                  splits=[0.6, 0.2, 0.2], batch_size=16, transform=ToTensor())
+
+train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset, method="by_site",
+                                                                 splits=[4, 1, 1], batch_size=16, transform=ToTensor())
+
+
+
