@@ -1,22 +1,27 @@
-import cv2
-import seaborn as sns
+
 import pandas as pd
 import numpy as np
+
 import rasterio
+
 from parts.patches import create_upper_left, pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
-from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
+from parts.processing import process
 from parts.data_split import train_val_test_dataloader
+
+
 from torchvision.transforms import ToTensor
 
 
-def create_data(gps_error, trees):
+def create_data(paths, hyperparameters, gps_error, trees):
     """
     Combining RGB image data and carbon distribution into
     4-channel image for each site.
     """
+
+    patch_size = hyperparameters["patch_size"]
     
     for site in trees.site.unique():
         print(f"Creating data for site {site}")
@@ -40,10 +45,13 @@ def create_data(gps_error, trees):
 
 
 def main():
+    
     # hyperparameters
-    patch_size = 400
-    angle = 30
-    n_rotations = 360 // angle
+    hyperparameters = {
+        "patch_size" : 400,
+        "angle" : 30,
+        "n_rotations" : 360 // 30
+    }
 
     #import gps error
     gps_error = get_gps_error()
@@ -57,10 +65,9 @@ def main():
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
-    create_data(gps_error, trees)
+    create_data(paths, hyperparameters, gps_error, trees)
 
-    # train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset, method="across_sites",
-    #                                                                  splits=[0.6, 0.2, 0.2], batch_size=16, transform=ToTensor())
+    data = process(trees.sites.unique, hyperparameters, paths)
 
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], method="by_site",
-                                                                    splits=[4, 1, 1], batch_size=16, transform=ToTensor())
+    train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, method="by_site",
+                                                                    splits=[4, 1, 1], batch_size=16)

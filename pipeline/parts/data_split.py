@@ -1,9 +1,10 @@
-from torch.utils.data import Dataset
 from pathlib import Path
+
 import numpy as np
-from torchvision.transforms import ToTensor
-import torch
 import pandas as pd
+
+import torch
+from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 
@@ -11,6 +12,7 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
     """
     path: to the images
     method: "across_sites" or "by_site"
+    data: contains file locations, labels and additional info
     splits: [train, val, test],
             summing up to 1 for method "across_sites"
             summing up to 6 for method "by_site"
@@ -18,17 +20,16 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
     sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
              'Nestor Macias RGB']
-    patches = create_patches_dataframe(path)
-    train_dataset = pd.DataFrame(data=None, columns=patches.columns)
-    val_dataset = pd.DataFrame(data=None, columns=patches.columns)
-    test_dataset = pd.DataFrame(data=None, columns=patches.columns)
+    train_dataset = pd.DataFrame(data=None, columns=data.columns)
+    val_dataset = pd.DataFrame(data=None, columns=data.columns)
+    test_dataset = pd.DataFrame(data=None, columns=data.columns)
 
     if method=="across_sites":
         ptrain, pval, ptest=splits
         assert(ptrain+pval+ptest==1)
         for i in range(len(sites)):
-            patches_site=data.loc[patches['site']==sites[i]]
-            train_site, test_val_site = train_test_split(data, train_size=ptrain)
+            data_site=data.loc[data['site']==sites[i]]
+            train_site, test_val_site = train_test_split(data_site, train_size=ptrain)
             val_site, test_site= train_test_split(test_val_site, train_size=pval/(pval+ptest))
             train_dataset= pd.concat([train_dataset, train_site])
             val_dataset = pd.concat([val_dataset, val_site])
@@ -41,13 +42,13 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
         np.random.shuffle(idx)
         print(idx)
         for i in idx[0:ntrain]:
-            patches_site = data.loc[patches['site'] == sites[i]]
+            patches_site = data.loc[data['site'] == sites[i]]
             train_dataset = pd.concat([train_dataset, patches_site])
         for i in idx[ntrain:(ntrain+nval)]:
-            patches_site = data.loc[patches['site'] == sites[i]]
+            patches_site = data.loc[data['site'] == sites[i]]
             val_dataset = pd.concat([val_dataset, patches_site])
         for i in idx[(ntrain+nval):6]:
-            patches_site = data.loc[patches['site'] == sites[i]]
+            patches_site = data.loc[data['site'] == sites[i]]
             test_dataset = pd.concat([test_dataset, patches_site])
     train_dataset = train_dataset.reset_index(drop=True)
     val_dataset = val_dataset.reset_index(drop=True)
