@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 
-def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
+def create_split_dataframe(path: str, data:pd.DataFrame, method:str, splits):
     """
     path: to the images
     method: "across_sites" or "by_site"
@@ -20,6 +20,7 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
     sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
              'Nestor Macias RGB']
+    
     train_dataset = pd.DataFrame(data=None, columns=data.columns)
     val_dataset = pd.DataFrame(data=None, columns=data.columns)
     test_dataset = pd.DataFrame(data=None, columns=data.columns)
@@ -28,10 +29,10 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
         ptrain, pval, ptest=splits
         assert(ptrain+pval+ptest==1)
         for i in range(len(sites)):
-            data_site=data.loc[data['site']==sites[i]]
+            data_site = data.loc[data['site']==sites[i]]
             train_site, test_val_site = train_test_split(data_site, train_size=ptrain)
             val_site, test_site= train_test_split(test_val_site, train_size=pval/(pval+ptest))
-            train_dataset= pd.concat([train_dataset, train_site])
+            train_dataset = pd.concat([train_dataset, train_site])
             val_dataset = pd.concat([val_dataset, val_site])
             test_dataset = pd.concat([test_dataset, test_site])
 
@@ -42,14 +43,15 @@ def create_split_dataframe(path: str, method:str, data:pd.DataFrame, splits):
         np.random.shuffle(idx)
         print(idx)
         for i in idx[0:ntrain]:
-            patches_site = data.loc[data['site'] == sites[i]]
-            train_dataset = pd.concat([train_dataset, patches_site])
+            data_site = data.loc[data['site'] == sites[i]]
+            train_dataset = pd.concat([train_dataset, data_site])
         for i in idx[ntrain:(ntrain+nval)]:
-            patches_site = data.loc[data['site'] == sites[i]]
-            val_dataset = pd.concat([val_dataset, patches_site])
+            data_site = data.loc[data['site'] == sites[i]]
+            val_dataset = pd.concat([val_dataset, data_site])
         for i in idx[(ntrain+nval):6]:
-            patches_site = data.loc[data['site'] == sites[i]]
-            test_dataset = pd.concat([test_dataset, patches_site])
+            data_site = data.loc[data['site'] == sites[i]]
+            test_dataset = pd.concat([test_dataset, data_site])
+    
     train_dataset = train_dataset.reset_index(drop=True)
     val_dataset = val_dataset.reset_index(drop=True)
     test_dataset = test_dataset.reset_index(drop=True)
@@ -96,8 +98,8 @@ class PatchesDataSet(Dataset):
         return image, carbon, site, rotation
 
 
-def train_val_test_dataset(path: str, method:str, splits):
-    train, val, test= create_split_dataframe(path, method, splits)
+def train_val_test_dataset(path: str, data:pd.DataFrame, method:str, splits):
+    train, val, test= create_split_dataframe(path, data, method, splits)
     train_dataset= PatchesDataSet(path, train)
     val_dataset = PatchesDataSet(path, val)
     test_dataset = PatchesDataSet(path, test)
@@ -105,8 +107,8 @@ def train_val_test_dataset(path: str, method:str, splits):
     return train_dataset, val_dataset, test_dataset
 
 
-def train_val_test_dataloader(path:str, method:str, splits, batch_size):
-    train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, method, splits)
+def train_val_test_dataloader(path:str, data:pd.DataFrame, method:str, splits, batch_size):
+    train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, data, method, splits)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
