@@ -10,14 +10,42 @@ from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
 from parts.data_split import train_val_test_dataloader
 from torchvision.transforms import ToTensor
+import argparse
 
 
-def create_data(gps_error, trees):
+#argument parser
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+#TODO: comment this section out to run the code without an argparser
+ap = argparse.ArgumentParser()
+ap.add_argument("-p", "--createpatches", required=True, type=str2bool,
+	help="boolean for whether to create the patches images dataset")
+ap.add_argument("-b", "--batchsize", required=False, type=int,
+                default=64, help="batch size for dataloader")
+ap.add_argument("-s", "--splitting", nargs='+', required=False, type=float,
+                default=[4,1,1], help="list of length 3 [size_train, size_val, size_test]. "
+                                      "If summing up to 1, the data will be split randomly across each site,"
+                                      "if summing up to 6, the data data will be split by site")
+args = ap.parse_args()
+
+create_dataset= args.createpatches
+splits=args.splitting
+batch_size= args.batchsize
+
+def create_data(paths, gps_error, trees, hyperparameters):
     """
     Combining RGB image data and carbon distribution into
     4-channel image for each site.
     """
-    
+    patch_size=hyperparameters["patch_size"]
     for site in trees.site.unique():
         print(f"Creating data for site {site}")
 
@@ -37,30 +65,29 @@ def create_data(gps_error, trees):
         np.save(paths["dataset"] + f"{site}", img)
 
 
-
-
 def main():
-    # hyperparameters
-    patch_size = 400
-    angle = 30
-    n_rotations = 360 // angle
-
+    hyperparameters ={
+    "patch_size" : 400,
+    "angle" : 30,
+    "n_rotations" : 360 // angle
+    }
     #import gps error
     gps_error = get_gps_error()
 
-
     paths = {
-        "reforestree" : "/home/jan/sem1/ai4good/data/reforestree/",
-        "dataset" : "/home/jan/sem1/ai4good/dataset/"
+        "reforestree" : "/Users/victoriabarenne/ai4good/ReforesTree/",
+        "dataset" : "/Users/victoriabarenne/ai4good/dataset/"
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
+    if create_dataset:
+        create_data(paths, gps_error, trees, hyperparameters)
 
-    create_data(gps_error, trees)
+    data = process(trees.sites.unique, hyperparameters, paths)
 
-    # train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset, method="across_sites",
-    #                                                                  splits=[0.6, 0.2, 0.2], batch_size=16, transform=ToTensor())
+    train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset,
+                                                                 splits=splits, batch_size=batch_size, transform=ToTensor())
 
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], method="by_site",
-                                                                    splits=[4, 1, 1], batch_size=16, transform=ToTensor())
+
+main()

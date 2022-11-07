@@ -11,7 +11,6 @@ def create_patches_dataframe(path):
     df = list()
 
     for i in range(len(files)):
-        print(i)
         data = np.load(str(files[i]))
         path_to_img=files[i]
         carbon = data["carbon"]
@@ -26,7 +25,7 @@ def create_patches_dataframe(path):
                 df.append(new)
                 idx += 1
     return pd.DataFrame(df)
-def create_split_dataframe(path: str, method:str, splits):
+def create_split_dataframe(path: str, splits:list):
     """
     path: to the images
     method: "across_sites" or "by_site"
@@ -34,6 +33,8 @@ def create_split_dataframe(path: str, method:str, splits):
             summing up to 1 for method "across_sites"
             summing up to 6 for method "by_site"
     """
+    assert(len(splits)==3)
+    assert((sum(splits)==1) or (sum(splits)==6))
     sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
              'Nestor Macias RGB']
@@ -42,9 +43,8 @@ def create_split_dataframe(path: str, method:str, splits):
     val_dataset = pd.DataFrame(data=None, columns=patches.columns)
     test_dataset = pd.DataFrame(data=None, columns=patches.columns)
 
-    if method=="across_sites":
+    if sum(splits)==1: #splitting across sites
         ptrain, pval, ptest=splits
-        assert(ptrain+pval+ptest==1)
         for i in range(len(sites)):
             patches_site=patches.loc[patches['site']==sites[i]]
             train_site, test_val_site = train_test_split(patches_site, train_size=ptrain)
@@ -53,12 +53,12 @@ def create_split_dataframe(path: str, method:str, splits):
             val_dataset = pd.concat([val_dataset, val_site])
             test_dataset = pd.concat([test_dataset, test_site])
 
-    if method=="by_site":
+    if sum(splits)==6: #splitting by site
         ntrain, nval, ntest=splits
-        assert(ntrain+nval+ntest==6)
+        assert ((ntrain == int(ntrain))&(nval == int(nval))&(nval == int(nval)))
+        ntrain, nval, ntest= int(ntrain), int(nval), int(ntest)
         idx=np.arange(6)
         np.random.shuffle(idx)
-        print(idx)
         for i in idx[0:ntrain]:
             patches_site = patches.loc[patches['site'] == sites[i]]
             train_dataset = pd.concat([train_dataset, patches_site])
@@ -73,16 +73,13 @@ def create_split_dataframe(path: str, method:str, splits):
     test_dataset = test_dataset.reset_index(drop=True)
     return train_dataset, val_dataset, test_dataset
 class PatchesDataSet(Dataset):
-    def __init__(self, path, df, transform=None):
+    def __init__(self, df, transform=None):
         """
         Args:
-            path (string): Path to the directory with the site images
+            df: dataframe containing the path to the images
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.path = path
-        # "/Users/victoriabarenne/Documents/ai4good2/dataset/"
-        self.files = list(Path(self.path).glob('**/*.npz'))
         self.df = df
         self.transform= transform
 
@@ -92,7 +89,7 @@ class PatchesDataSet(Dataset):
     def __getitem__(self, item):
         name=self.df["name"][item]
         path=self.df["path"][item]
-        carbon = self.df["carbon"][item]
+        carbon = torch.tensor(self.df["carbon"][item], dtype=torch.float32)
         site = self.df["site"][item]
         rotation = self.df["rotation"][item]
         image= np.load(path)[name][0:3, :, :]
@@ -100,14 +97,14 @@ class PatchesDataSet(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         return image, carbon, site, rotation
-def train_val_test_dataset(path: str, method:str, splits, transform=ToTensor()):
-    train, val, test= create_split_dataframe(path, method, splits)
-    train_dataset= PatchesDataSet(path, train, transform)
-    val_dataset = PatchesDataSet(path, val, transform)
-    test_dataset = PatchesDataSet(path, test, transform)
+def train_val_test_dataset(path: str, splits, transform=ToTensor()):
+    train, val, test= create_split_dataframe(path, splits)
+    train_dataset= PatchesDataSet(train, transform)
+    val_dataset = PatchesDataSet(val, transform)
+    test_dataset = PatchesDataSet(test, transform)
     return train_dataset, val_dataset, test_dataset
-def train_val_test_dataloader(path:str, method:str, splits, batch_size, transform=ToTensor()):
-    train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, method, splits, transform)
+def train_val_test_dataloader(path:str, splits, batch_size, transform=ToTensor()):
+    train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, splits, transform)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
