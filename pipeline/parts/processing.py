@@ -13,8 +13,8 @@ def get_upper_left(patch_size, img_shape):
     npatches = shape // patch_size
     assert (shape % patch_size == 0).all()
 
-    upper_left = np.zeros((npatches.size, 2))
-    indices = np.zeros((npatches.size, 2))
+    upper_left = np.zeros((npatches.prod(), 2))
+    indices = np.zeros((npatches.prod(), 2))
     
     count = 0
     for i in range(npatches[0]):
@@ -47,7 +47,7 @@ def process_site(df, hyperparameters, paths, site):
     upper_left, site_index = get_upper_left(patch_size, site_data.shape)
    
     df_prototype = pd.DataFrame([], columns=df.columns)
-    df_prototype["site index"] = site_index
+    df_prototype["site index"] = [site_index[i,] for i in range(site_index.shape[0])]
     df_prototype["upper left"] = upper_left
     df_prototype["site"] = site
     df_prototype["patch size"] = patch_size
@@ -55,7 +55,8 @@ def process_site(df, hyperparameters, paths, site):
     for angle in rotations:
         df_angle = df_prototype.copy()
         df_angle["rotation"] = angle #specifying current angle
-        df_angle["path"] = f"processed/{site}_{angle}.npy"
+        site_angle_path = f"processed/{site}_{angle}.npy"
+        df_angle["path"] = site_angle_path
 
         if angle != 0.0:
             site_data = rotate(site_data, angle)
@@ -63,10 +64,10 @@ def process_site(df, hyperparameters, paths, site):
         patched_data = site_data.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
         df_angle["carbon"] = patched_data[-1,].sum(dim=(-1,-2)).reshape(-1)         
         
-        torch.save(patched_data, paths["dataset"] + df_angle["path"])
+        torch.save(patched_data, paths["dataset"] + site_angle_path)
         new_df = pd.concat((new_df, df_angle))
 
-    return new_df
+    return pd.concat((df, new_df))
 
 def process(sites, hyperparameters, paths):
     """
@@ -79,5 +80,7 @@ def process(sites, hyperparameters, paths):
     print("Processing data")
     for site in sites:
         df = process_site(df, hyperparameters, paths, site)
-
+        
+    
+    df.to_csv(paths["dataset"] + "data.csv")
     return df

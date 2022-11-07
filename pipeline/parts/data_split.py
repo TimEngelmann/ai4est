@@ -106,7 +106,7 @@ def train_val_test_dataset(path: str, data:pd.DataFrame, splits, transform):
 
     return train_dataset, val_dataset, test_dataset
 
-def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size, transform):
+def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size, transform=None):
     train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, data, splits, transform)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)

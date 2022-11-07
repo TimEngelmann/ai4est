@@ -1,7 +1,5 @@
-import debugpy
-debugpy.listen(5678)
-
 import pandas as pd
+from io import StringIO
 import numpy as np
 import rasterio
 from parts.patches import pad
@@ -39,7 +37,7 @@ def get_args():
 
 
 
-def create_data(paths, trees, hyperparameters):
+def create_data(paths, hyperparameters, trees):
     """
     Combining RGB image data and carbon distribution into
     4-channel image for each site.
@@ -52,9 +50,9 @@ def create_data(paths, trees, hyperparameters):
 
         #get covariance for normal distribution
         if isinstance(hyperparameters["covariance"], dict):
-            covariance = hyperparameters["covariance"][site]
+            covariance = np.array(hyperparameters["covariance"][site])
         else:
-            covariance = hyperparameters["covariance"]
+            covariance = np.array(hyperparameters["covariance"])
 
         boundary = create_boundary(site, paths["reforestree"])
         img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
@@ -94,16 +92,15 @@ def main():
 
 
     paths = {
-        "reforestree" : "sft://euler.ethz.ch/cluster/work/igp_psr/ai4good/group-3b/",
-    # path_to_reforestree = "~/ai4est/data/reforestree/"
-        "dataset" : "sft://euler.ethz.ch/cluster/home/jabohl/ai4good/dataset/"
-    # path_to_dataset = "~/ai4est/data/dataset/"
+        "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/",
+        "dataset" : "/cluster/work/igp_psr/ai4good/group-3b/data/"
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
+    print(trees.columns)
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
     if create_dataset:
-        create_data(paths, hyperparameters["covariance"], trees, hyperparameters)
+        create_data(paths, hyperparameters, trees)
 
 
     data = process(trees.site.unique(), hyperparameters, paths)
