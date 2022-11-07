@@ -6,7 +6,6 @@ import rasterio
 from parts.patches import create_upper_left, pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
-from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader
@@ -64,7 +63,7 @@ def create_data(paths, gps_error, trees, hyperparameters):
         carbon_distribution = compute_carbon_distribution(site, img.shape, trees, gps_error)
         assert img.shape[1:] == carbon_distribution.shape
 
-        img = np.concatenate((img, carbon_distribution))
+        img = np.concatenate((img, carbon_distribution.reshape(1, img.shape[1], img.shape[2])))
 
         np.save(paths["dataset"] + f"{site}", img)
 
@@ -77,7 +76,7 @@ def main():
     hyperparameters = {
         "patch_size" : 400,
         "angle" : 30,
-        "n_rotations" : 360 // 30
+        "rotations" : [0, 30, 60]  # 360 // 30
     }
 
     #import gps error
@@ -85,8 +84,10 @@ def main():
 
 
     paths = {
-        "reforestree" : "/home/jan/sem1/ai4good/data/reforestree/",
-        "dataset" : "/home/jan/sem1/ai4good/dataset/"
+        "reforestree" : "../data/reforesTree/",
+# path_to_reforestree = "~/ai4est/data/reforestree/"
+        "dataset" : ".././data/dataset/"
+# path_to_dataset = "~/ai4est/data/dataset/"
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
@@ -95,8 +96,8 @@ def main():
         create_data(paths, gps_error, trees, hyperparameters)
 
 
-    data = process(trees.sites.unique, hyperparameters, paths)
-    train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset,
+    data = process(trees.site.unique(), hyperparameters, paths)
+    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"],
                                                                  splits=splits, batch_size=batch_size, transform=ToTensor())
 
 

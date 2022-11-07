@@ -20,7 +20,7 @@ def get_upper_left(patch_size, img_shape):
     for i in range(npatches[0]):
         for j in range(npatches[1]):
             upper_left[count, :] = np.array([i * patch_size, j * patch_size])
-            indices[count, :] = np.array[i, j]
+            indices[count, :] = np.array([i, j])
             count += 1
 
     return upper_left, indices
@@ -36,10 +36,10 @@ def process_site(df, hyperparameters, paths, site):
     the number of patches in each col.
     """
 
-    site_data = torch.from_numpy(np.load(paths["dataset"] + f"{site}"))
+    site_data = torch.from_numpy(np.load(paths["dataset"] + f"{site}.npy"))
     
     rotations = hyperparameters["rotations"]
-    patch_size = hyperparameters["patch size"]
+    patch_size = hyperparameters["patch_size"]
     
     new_df = pd.DataFrame([], columns=df.columns)
 
