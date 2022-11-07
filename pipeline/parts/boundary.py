@@ -7,7 +7,6 @@ import rasterio
 import rasterio.mask
 import geopandas as gpd
 import pandas as pd
-import PIL.Image as im
 
 def get_field_data(site:str, path_to_data:str) -> gpd.GeoDataFrame:
     """
@@ -64,14 +63,3 @@ def create_boundary(site:str, path_to_data:str, convex_hull=True):
         boundary = get_wwf_boundary(site, path_to_data).boundary
 
     return boundary
-
-
-def test():
-    name = "Manuel Macias RGB"
-    path = "/home/jan/sem1/ai4good/data/reforestree/"
-    img = make_image(name, path)
-    pil_img = im.fromarray(img.T)
-    pil_img.save("test.png")
-
-if __name__ == "__main__":
-    test()
