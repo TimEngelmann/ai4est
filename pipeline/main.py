@@ -8,6 +8,7 @@ from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.rotate import rotate_distribution, rotate_img
 from parts.helper.constants import get_gps_error
+from parts.processing import process
 from parts.data_split import train_val_test_dataloader
 from torchvision.transforms import ToTensor
 import argparse
@@ -40,12 +41,15 @@ create_dataset= args.createpatches
 splits=args.splitting
 batch_size= args.batchsize
 
+
 def create_data(paths, gps_error, trees, hyperparameters):
     """
     Combining RGB image data and carbon distribution into
     4-channel image for each site.
     """
-    patch_size=hyperparameters["patch_size"]
+
+    patch_size = hyperparameters["patch_size"]
+
     for site in trees.site.unique():
         print(f"Creating data for site {site}")
 
@@ -65,18 +69,24 @@ def create_data(paths, gps_error, trees, hyperparameters):
         np.save(paths["dataset"] + f"{site}", img)
 
 
+
+
 def main():
-    hyperparameters ={
-    "patch_size" : 400,
-    "angle" : 30,
-    "n_rotations" : 360 // angle
+
+    # hyperparameters
+    hyperparameters = {
+        "patch_size" : 400,
+        "angle" : 30,
+        "n_rotations" : 360 // 30
     }
+
     #import gps error
     gps_error = get_gps_error()
 
+
     paths = {
-        "reforestree" : "/Users/victoriabarenne/ai4good/ReforesTree/",
-        "dataset" : "/Users/victoriabarenne/ai4good/dataset/"
+        "reforestree" : "/home/jan/sem1/ai4good/data/reforestree/",
+        "dataset" : "/home/jan/sem1/ai4good/dataset/"
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
@@ -84,8 +94,8 @@ def main():
     if create_dataset:
         create_data(paths, gps_error, trees, hyperparameters)
 
-    data = process(trees.sites.unique, hyperparameters, paths)
 
+    data = process(trees.sites.unique, hyperparameters, paths)
     train_loader, val_loader, test_loader= train_val_test_dataloader(path_to_dataset,
                                                                  splits=splits, batch_size=batch_size, transform=ToTensor())
 
