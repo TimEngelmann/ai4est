@@ -39,7 +39,7 @@ def get_args():
 
 
 
-def create_data(paths, gps_error, trees, hyperparameters):
+def create_data(paths, trees, hyperparameters):
     """
     Combining RGB image data and carbon distribution into
     4-channel image for each site.
@@ -50,6 +50,12 @@ def create_data(paths, gps_error, trees, hyperparameters):
     for site in trees.site.unique():
         print(f"Creating data for site {site}")
 
+        #get covariance for normal distribution
+        if isinstance(hyperparameters["covariance"], dict):
+            covariance = hyperparameters["covariance"][site]
+        else:
+            covariance = hyperparameters["covariance"]
+
         boundary = create_boundary(site, paths["reforestree"])
         img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
 
@@ -58,7 +64,7 @@ def create_data(paths, gps_error, trees, hyperparameters):
             img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
         img = pad(img, patch_size) #padding image to make patches even
-        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, gps_error)
+        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, covariance)
         assert img.shape[1:] == carbon_distribution.shape
 
         img = np.concatenate((img, carbon_distribution.reshape(1, img.shape[1], img.shape[2])))
@@ -79,7 +85,8 @@ def main():
     hyperparameters = {
         "patch_size" : 400,
         "angle" : 30,
-        "rotations" : [0, 30, 60]  # 360 // 30
+        "rotations" : [0, 30, 60],
+        "covariance" : [[106196.72698492, -24666.11304593], [-24666.11304593, 113349.22307974]]
     }
 
     #import gps error
@@ -96,11 +103,11 @@ def main():
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
     if create_dataset:
-        create_data(paths, gps_error, trees, hyperparameters)
+        create_data(paths, hyperparameters["covariance"], trees, hyperparameters)
 
 
     data = process(trees.site.unique(), hyperparameters, paths)
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"],
+    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data,
                                                                  splits=splits, batch_size=batch_size)
 
 

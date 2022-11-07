@@ -39,7 +39,11 @@ def get_wwf_site_data(site, path_to_data):
     path = path_to_data + "wwf_ecuador/Merged_final_plots/Merged_final_plots.shp"
     site_data = gpd.read_file(path)
 
-    return sites[sites.Name==name]
+    return site_data[site_data.Name==name]
+
+
+def get_wwf_boundary(site, path):
+    raise NotImplementedError()
 
 def create_boundary(site:str, path_to_data:str, convex_hull=True):
     """

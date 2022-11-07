@@ -35,7 +35,7 @@ def process_site(df, hyperparameters, paths, site):
     where nrows is the number of patches in each row and ncols is
     the number of patches in each col.
     """
-
+    print(f"Processing data site {site}")
     site_data = torch.from_numpy(np.load(paths["dataset"] + f"{site}.npy"))
     
     rotations = hyperparameters["rotations"]
@@ -76,6 +76,7 @@ def process(sites, hyperparameters, paths):
 
     df = pd.DataFrame([], columns=["carbon", "path", "site", "rotation", "upper left", "patch size", "site index"])
 
+    print("Processing data")
     for site in sites:
         df = process_site(df, hyperparameters, paths, site)
 
