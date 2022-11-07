@@ -1,15 +1,15 @@
-import cv2
-import seaborn as sns
+import debugpy
+debugpy.listen(5678)
+
 import pandas as pd
 import numpy as np
 import rasterio
-from parts.patches import create_upper_left, pad
+from parts.patches import pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.helper.constants import get_gps_error
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader
-from torchvision.transforms import ToTensor
 import argparse
 
 
@@ -24,21 +24,19 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-#TODO: comment this section out to run the code without an argparser
-ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--createpatches", required=True, type=str2bool,
-	help="boolean for whether to create the patches images dataset")
-ap.add_argument("-b", "--batchsize", required=False, type=int,
-                default=64, help="batch size for dataloader")
-ap.add_argument("-s", "--splitting", nargs='+', required=False, type=float,
-                default=[4,1,1], help="list of length 3 [size_train, size_val, size_test]. "
-                                      "If summing up to 1, the data will be split randomly across each site,"
-                                      "if summing up to 6, the data data will be split by site")
-args = ap.parse_args()
+def get_args():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-p", "--createpatches", required=True, type=str2bool,
+        help="boolean for whether to create the patches images dataset")
+    ap.add_argument("-b", "--batchsize", required=False, type=int,
+                    default=64, help="batch size for dataloader")
+    ap.add_argument("-s", "--splitting", nargs='+', required=False, type=float,
+                    default=[4,1,1], help="list of length 3 [size_train, size_val, size_test]. "
+                                        "If summing up to 1, the data will be split randomly across each site,"
+                                        "if summing up to 6, the data data will be split by site")
+    return ap.parse_args()
 
-create_dataset= args.createpatches
-splits=args.splitting
-batch_size= args.batchsize
+
 
 
 def create_data(paths, gps_error, trees, hyperparameters):
@@ -71,6 +69,11 @@ def create_data(paths, gps_error, trees, hyperparameters):
 
 
 def main():
+    #TODO: comment this section out to run the code without an argparser
+    args = get_args()
+    create_dataset= args.createpatches
+    splits=args.splitting
+    batch_size= args.batchsize
 
     # hyperparameters
     hyperparameters = {
@@ -84,10 +87,10 @@ def main():
 
 
     paths = {
-        "reforestree" : "../data/reforesTree/",
-# path_to_reforestree = "~/ai4est/data/reforestree/"
-        "dataset" : ".././data/dataset/"
-# path_to_dataset = "~/ai4est/data/dataset/"
+        "reforestree" : "sft://euler.ethz.ch/cluster/work/igp_psr/ai4good/group-3b/",
+    # path_to_reforestree = "~/ai4est/data/reforestree/"
+        "dataset" : "sft://euler.ethz.ch/cluster/home/jabohl/ai4good/dataset/"
+    # path_to_dataset = "~/ai4est/data/dataset/"
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
@@ -98,7 +101,7 @@ def main():
 
     data = process(trees.site.unique(), hyperparameters, paths)
     train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"],
-                                                                 splits=splits, batch_size=batch_size, transform=ToTensor())
+                                                                 splits=splits, batch_size=batch_size)
 
 
 main()
