@@ -82,7 +82,7 @@ def process_site(df, hyperparameters, paths, site):
                 #computing how many removed patches have positive carbon
                 num_positive = (df_angle.loc[~filter_series, "carbon"] != 0.0).sum()
                 num_removed = (~filter_series).sum()
-                logging.warnign("%f percent of removed patches have nonzero carbon", num_positive * 100 / num_removed)
+                logging.warning("%f percent of removed patches have nonzero carbon", num_positive * 100 / num_removed)
 
                 #finding maximum nonzero carbon
                 max_removed_carbon = df_angle.loc[~filter_series, "carbon"].max()
