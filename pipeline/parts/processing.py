@@ -16,8 +16,8 @@ def get_upper_left(patch_size, img_shape):
     npatches = shape // patch_size
     assert (shape % patch_size == 0).all()
 
-    upper_left = np.zeros((npatches.size, 2))
-    indices = np.zeros((npatches.size, 2))
+    upper_left = np.zeros((npatches.prod(), 2))
+    indices = np.zeros((npatches.prod(), 2))
     
     count = 0
     for i in range(npatches[0]):
@@ -51,7 +51,7 @@ def process_site(df, hyperparameters, paths, site):
     upper_left, site_index = get_upper_left(patch_size, site_data.shape)
    
     df_prototype = pd.DataFrame([], columns=df.columns)
-    df_prototype["site index"] = pd.Series((site_index[i,] for i in site_index.shape[0]), dtype=int)
+    df_prototype["site index"] = pd.Series((site_index[i,] for i in range(site_index.shape[0])), dtype=int)
     df_prototype["upper left"] = upper_left
     df_prototype["site"] = site
     df_prototype["patch size"] = patch_size
@@ -71,7 +71,7 @@ def process_site(df, hyperparameters, paths, site):
         
         if filter_white:
             logging.info("Filtering white patches")
-            is_white =(patched_data[:3,] == 0.0).all(dim=(0,3,4))
+            is_white =(patched_data[:3,] == 0.0).numpy().all(axis=(0,3,4))
             filter = df_angle.apply(lambda row : is_white[row["site index"]], axis=1)
             filtered_df_angle = df_angle[filter]
             new_df = pd.concat((new_df, filtered_df_angle))

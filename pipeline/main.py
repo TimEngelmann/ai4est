@@ -73,7 +73,8 @@ def create_data(paths, hyperparameters, trees):
 
 
 def main():
-    logging.basicConfig(file="pipeline.log", level=logging.INFO)
+    logging.basicConfig(filename="pipeline.log", level=logging.INFO, 
+            filemode="w")
 
     #TODO: comment this section out to run the code without an argparser
     args = get_args()
@@ -84,7 +85,7 @@ def main():
     # hyperparameters
     hyperparameters = {
         "patch_size" : 400,
-        "filter_white" : False,
+        "filter_white" : True,
         "angle" : 30,
         "rotations" : [0, 30, 60],
         "covariance" : [[106196.72698492, -24666.11304593], [-24666.11304593, 113349.22307974]]
