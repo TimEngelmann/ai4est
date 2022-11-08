@@ -3,4 +3,4 @@ data/
 *.DS_Store
 
 
-debug.json
+launch.json

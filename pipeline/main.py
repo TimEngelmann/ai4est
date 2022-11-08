@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import logging
 import rasterio
 from parts.patches import pad
 from parts.boundary import create_boundary
@@ -45,7 +46,7 @@ def create_data(paths, hyperparameters, trees):
     patch_size = hyperparameters["patch_size"]
 
     for site in trees.site.unique():
-        print("Creating data for site" + site)
+        logging.info("Creating data for site %s", site)
 
         #get covariance for normal distribution
         if isinstance(hyperparameters["covariance"], dict):
@@ -72,6 +73,8 @@ def create_data(paths, hyperparameters, trees):
 
 
 def main():
+    logging.basicConfig(file="pipeline.log", level=logging.INFO)
+
     #TODO: comment this section out to run the code without an argparser
     args = get_args()
     create_dataset= args.createpatches
@@ -81,6 +84,7 @@ def main():
     # hyperparameters
     hyperparameters = {
         "patch_size" : 400,
+        "filter_white" : False,
         "angle" : 30,
         "rotations" : [0, 30, 60],
         "covariance" : [[106196.72698492, -24666.11304593], [-24666.11304593, 113349.22307974]]
@@ -98,6 +102,7 @@ def main():
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
     if create_dataset:
+        logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
 
 
