@@ -1,5 +1,4 @@
 import pandas as pd
-from io import StringIO
 import numpy as np
 import rasterio
 from parts.patches import pad
@@ -46,7 +45,7 @@ def create_data(paths, hyperparameters, trees):
     patch_size = hyperparameters["patch_size"]
 
     for site in trees.site.unique():
-        print(f"Creating data for site {site}")
+        print("Creating data for site" + site)
 
         #get covariance for normal distribution
         if isinstance(hyperparameters["covariance"], dict):
@@ -97,7 +96,6 @@ def main():
     }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
-    print(trees.columns)
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
     if create_dataset:
         create_data(paths, hyperparameters, trees)

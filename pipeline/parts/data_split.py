@@ -7,8 +7,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-
-def create_split_dataframe(path: str, data:pd.DataFrame, method:str, splits):
+def create_split_dataframe(path: str, data:pd.DataFrame, splits):
     """
     path: to the images
     data: contains file locations, labels and additional info

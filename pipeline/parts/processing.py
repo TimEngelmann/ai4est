@@ -55,7 +55,7 @@ def process_site(df, hyperparameters, paths, site):
     for angle in rotations:
         df_angle = df_prototype.copy()
         df_angle["rotation"] = angle #specifying current angle
-        site_angle_path = f"processed/{site}_{angle}.npy"
+        site_angle_path = f"processed/{site}_{angle}.pt"
         df_angle["path"] = site_angle_path
 
         if angle != 0.0:
