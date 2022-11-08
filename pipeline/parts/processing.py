@@ -80,7 +80,6 @@ def process_site(df, hyperparameters, paths, site):
         else:        
             new_df = pd.concat((new_df, df_angle))
 
-
         torch.save(patched_data, paths["dataset"] + df_angle["path"])
 
     return new_df
@@ -93,6 +92,10 @@ def process(sites, hyperparameters, paths):
 
     df = pd.DataFrame([], columns=["carbon", "path", "site", "rotation", "upper left", "patch size", "site index"])
     
+    # creating folder "paths["dataset"]/processed" if it doesn't exist
+    if not os.path.exists(paths["dataset"] + "processed"):
+        logging.info("Creating directory %s", paths["dataset"] + "processed")
+
     logging.info("Removing old data")
     files = glob.glob(paths["dataset"] + "/processed/*.npy")
     for f in files:
