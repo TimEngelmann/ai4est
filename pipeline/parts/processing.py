@@ -51,7 +51,7 @@ def process_site(df, hyperparameters, paths, site):
     upper_left, site_index = get_upper_left(patch_size, site_data.shape)
    
     df_prototype = pd.DataFrame([], columns=df.columns)
-    df_prototype["site index"] = pd.Series((site_index[i,] for i in range(site_index.shape[0])), dtype=int)
+    df_prototype["site index"] = pd.Series((tuple(site_index[i,]) for i in range(site_index.shape[0])))
     df_prototype["upper left"] = upper_left
     df_prototype["site"] = site
     df_prototype["patch size"] = patch_size
@@ -80,7 +80,7 @@ def process_site(df, hyperparameters, paths, site):
         else:        
             new_df = pd.concat((new_df, df_angle))
 
-        torch.save(patched_data, paths["dataset"] + df_angle["path"])
+        torch.save(patched_data, paths["dataset"] + site_angle_path)
 
     return new_df
 
