@@ -74,7 +74,7 @@ def create_data(paths, hyperparameters, trees):
 
 def main():
     logging.basicConfig(filename="pipeline.log", level=logging.INFO, 
-            filemode="w")
+            filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
     #TODO: comment this section out to run the code without an argparser
     args = get_args()
