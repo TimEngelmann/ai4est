@@ -106,6 +106,7 @@ def process(sites, hyperparameters, paths):
     # creating folder "paths["dataset"]/processed" if it doesn't exist
     if not os.path.exists(paths["dataset"] + "processed"):
         logging.info("Creating directory %s", paths["dataset"] + "processed")
+        os.makedirs(paths["dataset"] + "processed")
 
     #removing the files from previous processing run
     logging.info("Removing old data")

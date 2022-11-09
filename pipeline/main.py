@@ -24,8 +24,8 @@ def str2bool(v):
 
 def get_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-p", "--createpatches", required=True, type=str2bool,
-        help="boolean for whether to create the patches images dataset")
+    ap.add_argument("-p", "--createpatches", required=False, type=str2bool,
+        default="True",help="boolean for whether to create the patches images dataset")
     ap.add_argument("-b", "--batchsize", required=False, type=int,
                     default=64, help="batch size for dataloader")
     ap.add_argument("-s", "--splitting", nargs='+', required=False, type=float,
@@ -94,7 +94,7 @@ def main():
     #import gps error
     gps_error = get_gps_error()
 
-
+    #TODO: Change path names to your own local directories
     paths = {
         "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/",
         "dataset" : "/cluster/work/igp_psr/ai4good/group-3b/data/"
