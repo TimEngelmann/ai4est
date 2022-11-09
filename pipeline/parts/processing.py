@@ -115,6 +115,6 @@ def process(sites, hyperparameters, paths):
 
     logging.info("Processing data")
     for site in sites:
-        df = process_site(df, hyperparameters, paths, site)
+        df = pd.concat((df, process_site(df, hyperparameters, paths, site)))
 
     return df

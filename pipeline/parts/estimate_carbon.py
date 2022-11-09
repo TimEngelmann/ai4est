@@ -32,7 +32,8 @@ def compute_carbon_distribution(site, img_shape, trees, cov):
     pos = np.dstack((y_range, x_range))
 
     #TODO investigate mean in normal distribution
-    rv = multivariate_normal([max_y_tree/2, max_x_tree/2], cov)
+    mean = np.array([-246.35193671, 57.03964288])
+    rv = multivariate_normal([max_y_tree/2 + mean[1], max_x_tree/2 + + mean[0]], cov)
     
     gaussian = rv.pdf(pos)
     gaussian = rv.pdf(pos)
