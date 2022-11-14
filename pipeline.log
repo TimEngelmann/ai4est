@@ -1,0 +1,80 @@
+[2022-11-14 15:46:41,843 | INFO] Removing old data
+[2022-11-14 15:46:41,951 | INFO] Processing data
+[2022-11-14 15:46:41,951 | INFO] Processing data for site Nestor Macias RGB
+[2022-11-14 15:46:46,569 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:46:46,643 | INFO] Filtering white patches
+[2022-11-14 15:46:46,795 | WARNING] 47.391304 percent of removed patches have nonzero carbon
+[2022-11-14 15:46:46,795 | WARNING] Max removed carbon is 5.889557 at index (20, 14)
+[2022-11-14 15:46:48,830 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:46:55,683 | INFO] Filtering white patches
+[2022-11-14 15:46:55,847 | WARNING] 48.543689 percent of removed patches have nonzero carbon
+[2022-11-14 15:46:55,847 | WARNING] Max removed carbon is 7.864888 at index (22, 17)
+[2022-11-14 15:46:58,011 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:47:05,757 | INFO] Filtering white patches
+[2022-11-14 15:47:05,854 | WARNING] 43.973941 percent of removed patches have nonzero carbon
+[2022-11-14 15:47:05,855 | WARNING] Max removed carbon is 8.161199 at index (20, 23)
+[2022-11-14 15:47:08,050 | INFO] Processing data for site Leonor Aspiazu RGB
+[2022-11-14 15:47:13,414 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:47:13,501 | INFO] Filtering white patches
+[2022-11-14 15:47:13,685 | WARNING] 39.743590 percent of removed patches have nonzero carbon
+[2022-11-14 15:47:13,685 | WARNING] Max removed carbon is 6.127719 at index (19, 17)
+[2022-11-14 15:47:16,204 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:47:27,815 | INFO] Filtering white patches
+[2022-11-14 15:47:28,083 | WARNING] 40.896615 percent of removed patches have nonzero carbon
+[2022-11-14 15:47:28,083 | WARNING] Max removed carbon is 3.986563 at index (21, 19)
+[2022-11-14 15:47:30,702 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:47:43,784 | INFO] Filtering white patches
+[2022-11-14 15:47:44,016 | WARNING] 38.827839 percent of removed patches have nonzero carbon
+[2022-11-14 15:47:44,016 | WARNING] Max removed carbon is 6.127715 at index (21, 23)
+[2022-11-14 15:47:46,785 | INFO] Processing data for site Carlos Vera Arteaga RGB
+[2022-11-14 15:47:52,015 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:47:52,103 | INFO] Filtering white patches
+[2022-11-14 15:47:52,271 | WARNING] 41.236162 percent of removed patches have nonzero carbon
+[2022-11-14 15:47:52,271 | WARNING] Max removed carbon is 7.609690 at index (11, 23)
+[2022-11-14 15:47:54,812 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:48:04,619 | INFO] Filtering white patches
+[2022-11-14 15:48:04,844 | WARNING] 41.427247 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:04,844 | WARNING] Max removed carbon is 4.952802 at index (10, 19)
+[2022-11-14 15:48:07,672 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:48:18,494 | INFO] Filtering white patches
+[2022-11-14 15:48:18,799 | WARNING] 40.720222 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:18,800 | WARNING] Max removed carbon is 8.518131 at index (14, 11)
+[2022-11-14 15:48:22,584 | INFO] Processing data for site Carlos Vera Guevara RGB
+[2022-11-14 15:48:26,424 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:48:26,488 | INFO] Filtering white patches
+[2022-11-14 15:48:26,634 | WARNING] 50.874832 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:26,634 | WARNING] Max removed carbon is 20.252005 at index (12, 17)
+[2022-11-14 15:48:28,321 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:48:33,078 | INFO] Filtering white patches
+[2022-11-14 15:48:33,171 | WARNING] 52.845528 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:33,171 | WARNING] Max removed carbon is 19.417163 at index (11, 16)
+[2022-11-14 15:48:34,812 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:48:39,983 | INFO] Filtering white patches
+[2022-11-14 15:48:40,062 | WARNING] 49.864130 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:40,062 | WARNING] Max removed carbon is 19.849392 at index (13, 12)
+[2022-11-14 15:48:41,755 | INFO] Processing data for site Flora Pluas RGB
+[2022-11-14 15:48:47,515 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:48:47,609 | INFO] Filtering white patches
+[2022-11-14 15:48:47,795 | WARNING] 38.730675 percent of removed patches have nonzero carbon
+[2022-11-14 15:48:47,796 | WARNING] Max removed carbon is 6.497716 at index (9, 16)
+[2022-11-14 15:48:50,493 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:49:03,172 | INFO] Filtering white patches
+[2022-11-14 15:49:03,446 | WARNING] 39.317628 percent of removed patches have nonzero carbon
+[2022-11-14 15:49:03,446 | WARNING] Max removed carbon is 6.563791 at index (16, 19)
+[2022-11-14 15:49:06,058 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:49:20,145 | INFO] Filtering white patches
+[2022-11-14 15:49:20,400 | WARNING] 37.804878 percent of removed patches have nonzero carbon
+[2022-11-14 15:49:20,401 | WARNING] Max removed carbon is 7.824770 at index (19, 17)
+[2022-11-14 15:49:23,081 | INFO] Processing data for site Manuel Macias RGB
+[2022-11-14 15:49:26,489 | INFO] Processing data with rotation angle 0
+[2022-11-14 15:49:26,546 | INFO] Filtering white patches
+[2022-11-14 15:49:26,653 | WARNING] 56.814921 percent of removed patches have nonzero carbon
+[2022-11-14 15:49:26,654 | WARNING] Max removed carbon is 2.189088 at index (11, 20)
+[2022-11-14 15:49:28,336 | INFO] Processing data with rotation angle 30
+[2022-11-14 15:49:32,951 | INFO] Filtering white patches
+[2022-11-14 15:49:33,046 | WARNING] 53.545586 percent of removed patches have nonzero carbon
+[2022-11-14 15:49:33,046 | WARNING] Max removed carbon is 2.028752 at index (10, 19)
+[2022-11-14 15:49:34,820 | INFO] Processing data with rotation angle 60
+[2022-11-14 15:49:40,717 | INFO] Filtering white patches
+[2022-11-14 15:49:40,799 | WARNING] 45.791726 percent of removed patches have nonzero carbon
+[2022-11-14 15:49:40,799 | WARNING] Max removed carbon is 2.348636 at index (9, 15)

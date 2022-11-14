@@ -9,6 +9,8 @@ from parts.helper.constants import get_gps_error
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader
 import argparse
+from PIL import Image
+import os
 
 
 #argument parser
@@ -53,6 +55,7 @@ def create_data(paths, hyperparameters, trees):
             covariance = np.array(hyperparameters["covariance"][site])
         else:
             covariance = np.array(hyperparameters["covariance"])
+        mean = np.array(hyperparameters["mean"])
 
         boundary = create_boundary(site, paths["reforestree"])
         img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
@@ -62,12 +65,17 @@ def create_data(paths, hyperparameters, trees):
             img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
         img = pad(img, patch_size) #padding image to make patches even
-        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, covariance)
+        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance)
         assert img.shape[1:] == carbon_distribution.shape
 
-        img = np.concatenate((img, carbon_distribution.reshape(1, img.shape[1], img.shape[2])))
+        # creating folder "paths["dataset"]/processed" if it doesn't exist
+        if not os.path.exists(paths["dataset"] + "sites"):
+            logging.info("Creating directory %s", paths["dataset"] + "sites")
+            os.makedirs(paths["dataset"] + "sites")
 
-        np.save(paths["dataset"] + f"{site}", img)
+        np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
+        im = Image.fromarray(np.moveaxis(img, 0, -1))
+        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")    
 
 
 
@@ -79,6 +87,7 @@ def main():
     #TODO: comment this section out to run the code without an argparser
     args = get_args()
     create_dataset= args.createpatches
+    create_dataset = False
     splits=args.splitting
     batch_size= args.batchsize
 
@@ -88,6 +97,7 @@ def main():
         "filter_white" : True,
         "angle" : 30,
         "rotations" : [0, 30, 60],
+        "mean": [-246.35193671, 57.03964288],
         "covariance" : [[106196.72698492, -24666.11304593], [-24666.11304593, 113349.22307974]]
     }
 
@@ -95,10 +105,17 @@ def main():
     gps_error = get_gps_error()
 
     #TODO: Change path names to your own local directories
+    local = True
+
     paths = {
         "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/",
         "dataset" : "/cluster/work/igp_psr/ai4good/group-3b/data/"
     }
+    if local:
+        paths = {
+            "reforestree" : "data/reforestree/",
+            "dataset" : "data/dataset/"
+        }
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
@@ -106,10 +123,9 @@ def main():
         logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
 
-
     data = process(trees.site.unique(), hyperparameters, paths)
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data,
-                                                                 splits=splits, batch_size=batch_size)
 
+    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data,
+                                                                 splits=splits, batch_size=batch_size)                                                          
 
 main()

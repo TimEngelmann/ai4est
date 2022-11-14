@@ -2,10 +2,10 @@ from torch.utils.data import Dataset
 from pathlib import Path
 import numpy as np
 from torchvision.transforms import ToTensor
+import torchvision.io
 import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
 
 def create_split_dataframe(path: str, data:pd.DataFrame, splits):
     """
@@ -82,9 +82,8 @@ class PatchesDataSet(Dataset):
         path = self.path + self.df["path"][item]
         site = self.df["site"][item]
         rotation = self.df["rotation"][item]
-        i, j = self.df["site index"][item]
 
-        image = torch.load(path)[:, i, j, ...]
+        image = torchvision.io.read_image(path)
         carbon = self.df["carbon"][item]
 
         assert image.shape[0] == 3

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import multivariate_normal
 
 
-def compute_carbon_distribution(site, img_shape, trees, cov):
+def compute_carbon_distribution(site, img_shape, trees, mean, cov):
     """
     Computing the distribution of carbon for a specified
     site. We assume that the carbon is distributed normally
@@ -32,7 +32,6 @@ def compute_carbon_distribution(site, img_shape, trees, cov):
     pos = np.dstack((y_range, x_range))
 
     #TODO investigate mean in normal distribution
-    mean = np.array([-246.35193671, 57.03964288])
     rv = multivariate_normal([max_y_tree/2 + mean[1], max_x_tree/2 + + mean[0]], np.flip(cov))
     
     gaussian = rv.pdf(pos)
