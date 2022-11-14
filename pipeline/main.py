@@ -87,7 +87,6 @@ def main():
     #TODO: comment this section out to run the code without an argparser
     args = get_args()
     create_dataset= args.createpatches
-    create_dataset = False
     splits=args.splitting
     batch_size= args.batchsize
 
@@ -105,17 +104,17 @@ def main():
     gps_error = get_gps_error()
 
     #TODO: Change path names to your own local directories
-    local = True
-
     paths = {
         "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/",
         "dataset" : "/cluster/work/igp_psr/ai4good/group-3b/data/"
     }
-    if local:
-        paths = {
-            "reforestree" : "data/reforestree/",
-            "dataset" : "data/dataset/"
-        }
+
+    '''
+    paths = {
+        "reforestree" : "data/reforestree/",
+        "dataset" : "data/dataset/"
+    }
+    '''
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
