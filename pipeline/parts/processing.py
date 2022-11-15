@@ -88,6 +88,8 @@ def process_site(df, hyperparameters, paths, site):
         filter_series = df_angle.apply(lambda row : not is_white[row["site_index"]], axis=1)
         filtered_df_angle = df_angle[filter_series]
 
+        is_pixel_white =(patched_data[:3,]==0).numpy().all(axis=(0))
+
         #testing if any of the removed patches have nonzero carbon
         if (df_angle.loc[~filter_series, "carbon"] != 0.0).any():
             #computing how many removed patches have positive carbon

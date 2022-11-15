@@ -1,85 +1,97 @@
 import torch
+import torch.nn as nn
+import logging
 import torch.nn.functional as F
 from torchvision.models import resnet18
+import torchvision
+from IPython import embed
+import torch.optim as optim
+from labml_nn.optimizers.amsgrad import AMSGrad
+import torchvision.models as models
 
 
-def train(model, train_dataloader, optimizer, epoch, log_interval, device):
-    '''
+class SimpleCNN(nn.Module):
+    def __init__(self, img_dimension, n_channels):
+        super().__init__()
+        self.img_dimension=img_dimension
+        self.n_channels=n_channels
 
- A function that is deployed in order to training a pytorch model.
+        self.conv_layer1 = nn.Sequential(
+            nn.Conv2d(in_channels=self.n_channels, out_channels=16, kernel_size=5), #16x24x24 OR 16x(img_dimension-4)*2
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2) #16x12x12 OR 16x(img_dimension/2-2)*2
+        )
 
- :param model: a torch model that we are interested in training
- :param train_dataloader: a torch Dataloader that contains the data meant for trading
- :param optimizer: the optimizer that is used during training
- :param epoch: the current training epoch
- :param log_interval: the interval used to log the results of the training process
- :param device: the device that is used for the training process (CPU or GPU ('cuda'))
- :return:
- '''
+        self.conv_layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5), #32x8x8 OR 32x(img_dimension/2-6)*2
+            nn.ReLU(),
+            nn.MaxPool2d(2, 2) #32x4x4 OR 32x(img_dimension/4-3)*2
+        )
 
-    # Set the model on training mode
+
+        self.fc_layer = nn.Sequential(
+            nn.Linear(in_features= int(32*(self.img_dimension/4-3)**2), out_features=128),
+            nn.ReLU(),
+            nn.Linear(in_features=128, out_features=1),
+            nn.ReLU()
+        )
+
+    def forward(self, x):
+        out = self.conv_layer1(x)
+        out=self.conv_layer2(out)
+        out = out.view(-1, int(32*(self.img_dimension/4-3)**2))
+        out = self.fc_layer(out)
+        return out
+
+
+class Resnet18Benchmark(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model= models.resnet18()
+        self.model.fc= nn.Linear(512,1) #Change the final linear layer
+        self.activation= nn.ReLU()
+
+
+    def forward(self, x):
+        out=self.model(x)
+        out=self.activation(out)
+        return out
+
+def train(model, training_hyperparameters, train_loader):
+
+    loss_fn=training_hyperparameters["loss_fn"]
+    n_epochs=training_hyperparameters["n_epochs"]
+    device=training_hyperparameters["device"]
+    log_interval=training_hyperparameters["log_interval"]
+    learning_rate=training_hyperparameters["learning_rate"]
+
+    logging.info(f"Starting to train the model with {n_epochs} epochs total")
+    model.to(device)
     model.train()
 
-    # for each batch
-    for batch_idx, (data, target) in enumerate(train_dataloader):
-        # Send the batch to the GPU
-        data, target = data.float(), target.float()
-        data, target = data.to(device), target.to(device)
-
-        # Start the training process
-        optimizer.zero_grad()
-
-        # Get the model predictions for the current batch
-        output = model.forward(data)
-
-        # Calculate the MSE Loss between the predictions and the ground truth values
-        loss = F.mse_loss(output, target)
-
-        # Back-propagate the loss through the model
-        loss.backward()
-
-        # Take an optimizer step
-        optimizer.step()
-
-        # If it is time to log the training process
-        if batch_idx % log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data),
-                                                                           len(train_dataloader.dataset),
-                                                                           100. * batch_idx / len(train_dataloader),
-                                                                           loss.item()))
-
-        # If loss is under a small value ε, stop the training process
-        epsilon = 1e-5
-        if loss < epsilon:
-            return True
+    if training_hyperparameters["optimizer"]=="amsgrad":
+        optimizer= AMSGrad(model.parameters(), lr=learning_rate)
 
 
-# if __name__ == '__main__':
-#     # TODO : set path to reforestree folder
-#     path_to_reforestree = ""
-#     # TODO :  set path where patches will be saved
-#     path_to_dataset = ""
-#
-#     # Run it on GPU
-#     device = 'cuda'
-#     # Create the dataloaders thanks to Victoria!
-#     trdl, tsdl = create_test_train_dataloader(path_to_dataset)
-#
-#     # Add a final layer on the ResNet to make it into a regressions task
-#     model = torch.nn.Sequential(resnet18(), torch.nn.Linear(in_features=1000, out_features=1), torch.nn.ReLU())
-#
-#     # Send the model to the GPU
-#     model = model.to(device)
-#
-#     # The optimizer and the scheduler used during training
-#     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-#     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
-#
-#     # Training the model for epochs amount of epochs.
-#     epochs = 50
-#     for epoch in range(1, epochs + 1):
-#         flag = train(model, trdl, optimizer, epoch, log_interval=1, device=device)
-#         if flag:
-#             break
-#         # test(model, tsdl)
-#         scheduler.step()
+
+    for epoch in range(n_epochs):  # loop over the dataset multiple times
+        running_loss = 0.0
+        for batch_id, (img, carbon, _, _) in enumerate(train_loader, 0):
+            # zero the parameter gradients
+            img, carbon= img.to(torch.float32), carbon.to(torch.float32)
+            img, carbon= img.to(device), carbon.to(device)
+            optimizer.zero_grad()
+            outputs = model(img)
+            outputs=outputs.squeeze()
+            loss = loss_fn(outputs, carbon)
+            loss.backward()
+            optimizer.step()
+
+            # print statistics
+            running_loss += loss.item()
+            if batch_id % log_interval == log_interval-1:
+                print(f'[Epoch {epoch + 1}, Batch {batch_id + 1:5d}] loss: {running_loss / log_interval:.3f}')
+                running_loss = 0.0
+    logging.info(f'Finished Training')
+
+

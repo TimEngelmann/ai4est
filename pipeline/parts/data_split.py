@@ -87,7 +87,6 @@ class PatchesDataSet(Dataset):
         carbon = self.df["carbon"][item]
 
         assert image.shape[0] == 3
-        assert image.ax
 
 
         if self.transform is not None:
