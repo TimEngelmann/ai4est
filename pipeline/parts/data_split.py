@@ -90,7 +90,7 @@ class PatchesDataSet(Dataset):
 
 
         if self.transform is not None:
-            image = self.transform(image)
+            image = self.transform(image.double())
 
         return image, carbon, site, rotation
 

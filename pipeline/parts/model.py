@@ -4,10 +4,11 @@ import logging
 import torch.nn.functional as F
 from torchvision.models import resnet18
 import torchvision
-from IPython import embed
+# from IPython import embed
 import torch.optim as optim
-from labml_nn.optimizers.amsgrad import AMSGrad
+# from labml_nn.optimizers.amsgrad import AMSGrad
 import torchvision.models as models
+from torch.optim import Adam
 
 
 class SimpleCNN(nn.Module):
@@ -70,8 +71,10 @@ def train(model, training_hyperparameters, train_loader):
     model.train()
 
     if training_hyperparameters["optimizer"]=="amsgrad":
-        optimizer= AMSGrad(model.parameters(), lr=learning_rate)
-
+        # optimizer= AMSGrad(model.parameters(), lr=learning_rate)
+        optimizer= Adam(model.parameters(), lr=learning_rate, amsgrad=True)
+    elif training_hyperparameters["optimizer"]=="adam":
+        optimizer= Adam(model.parameters(), lr=learning_rate, amsgrad=False)
 
 
     for epoch in range(n_epochs):  # loop over the dataset multiple times
@@ -95,3 +98,30 @@ def train(model, training_hyperparameters, train_loader):
     logging.info(f'Finished Training')
 
 
+# def val(model, val_dataloader, device):
+#     '''
+#     A function that is deployed in order to training a pytorch model.
+#
+#     :param model: a torch model that we are interested in training
+#     :param train_dataloader: a torch Dataloader that contains the data meant for trading
+#     :param device: the device that is used for the training process (CPU or GPU ('cuda'))
+#     :return:
+#     '''
+#
+#     # Set the model on training mode
+#     model.eval()
+#     test_loss = 0
+#
+#     with torch.no_grad():
+#         for data, target in val_dataloader:
+#             # Send the batch to the GPU
+#             data, target = data.float(), target.float()
+#             data, target = data.to(device), target.to(device)
+#
+#             # Get the model predictions for the current batch
+#             output = model.forward(data)
+#
+#             # Calculate the MSE Loss between the predictions and the ground truth values
+#             test_loss += F.mse_loss(output, target, reduction='sum').item()  # sum up batch loss
+#
+#     print('\nTest set: Average loss: {:.4f})\n'.format(test_loss/len(val_dataloader.dataset)))
