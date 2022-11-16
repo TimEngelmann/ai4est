@@ -43,18 +43,15 @@ def process_site(df, hyperparameters, paths, site):
     logging.info("Processing data for site %s", site)
     
     # load image and carbon distribution and place them into site_data
-    img = cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
-    h, w, _ = img.shape
-
-    site_data = torch.empty((4, h, w))
-    site_data[:3, ] = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")
-    site_data[3, ] = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
+    img = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")[:3, ]
+    carbon = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
 
     # start
     rotations = hyperparameters["rotations"]
     patch_size = hyperparameters["patch_size"]
+    filter_threshold = hyperparameters["filter_threshold"]
     
-    _, site_index = get_upper_left(patch_size, site_data.shape)
+    _, site_index = get_upper_left(patch_size, img.shape)
    
     paths_output = []
     for angle in rotations:
@@ -66,18 +63,21 @@ def process_site(df, hyperparameters, paths, site):
         df_angle["patch size"] = [patch_size] * len(df_angle)
 
         if angle != 0.0:
-            site_data = rotate(site_data, angle)
+            carbon = rotate(carbon, angle)
+            img = rotate(img, angle)
     
-        site_data = site_data.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
-        df_angle["carbon"] = site_data[-1,].sum(dim=(-1,-2)).reshape(-1)         
+        img = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+        carbon = carbon.unfold(0, patch_size,  patch_size).unfold(1, patch_size, patch_size)
+        df_angle["carbon"] = carbon.sum(dim=(-1,-2)).reshape(-1)         
+
+        del carbon
         
         #filtering empty patches
         logging.info("Filtering white patches")
-        is_white = (site_data[:3,] == 0.0).numpy().all(axis=(0,3,4)) #true if patch ij is empty
+        is_white = ((img == 0).sum(dim=(0, -1,-2)) > filter_threshold * patch_size ** 2)
         filter_series = df_angle.apply(lambda row : not is_white[row["site_index"]], axis=1)
         filtered_df_angle = df_angle[filter_series]
 
-        is_pixel_white =(site_data[:3,]==0).numpy().all(axis=(0))
 
         #testing if any of the removed patches have nonzero carbon
         if (df_angle.loc[~filter_series, "carbon"] != 0.0).any():
@@ -94,11 +94,10 @@ def process_site(df, hyperparameters, paths, site):
         # torch.save(site_data, paths["dataset"] + site_angle_path)
         for idx, patch in filtered_df_angle.iterrows():
             i, j = patch["site_index"]
-            img = site_data[:3,i,j,]
             image_path = "patches/" + f"{site}_{angle}_{idx}.png"
             filtered_df_angle.loc[idx, "path"] = image_path
 
-            write_png(img, image_path)
+            write_png(img[:, i, j, ], paths["dataset"] + image_path)
 
         df = pd.concat((df, filtered_df_angle)) 
 
