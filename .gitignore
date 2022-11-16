@@ -3,3 +3,11 @@ data/
 *.DS_Store
 original_code/
 launch.json
+
+#Ignore pycache
+*.pyc
+*/__pycache__
+
+
+#Ignore logging files
+*.log

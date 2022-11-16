@@ -11,6 +11,7 @@ from parts.data_split import train_val_test_dataloader
 import argparse
 from PIL import Image
 import os
+import json
 from IPython import embed
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
@@ -54,6 +55,11 @@ def create_data(paths, hyperparameters, trees):
 
     patch_size = hyperparameters["patch_size"]
 
+    # creating folder "paths["dataset"]/processed" if it doesn't exist
+    if not os.path.exists(paths["dataset"] + "sites"):
+        logging.info("Creating directory %s", paths["dataset"] + "sites")
+        os.makedirs(paths["dataset"] + "sites")
+
     for site in trees.site.unique():
         logging.info("Creating data for site %s", site)
 
@@ -75,10 +81,6 @@ def create_data(paths, hyperparameters, trees):
         carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance)
         assert img.shape[1:] == carbon_distribution.shape
 
-        # creating folder "paths["dataset"]/processed" if it doesn't exist
-        if not os.path.exists(paths["dataset"] + "sites"):
-            logging.info("Creating directory %s", paths["dataset"] + "sites")
-            os.makedirs(paths["dataset"] + "sites")
 
         np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
         im = Image.fromarray(np.moveaxis(img, 0, -1))
@@ -97,8 +99,8 @@ def main():
     batch_size= args.batchsize
 
     #TODO: Uncomment this section to change the following hyperparameters without using an argparser
-    # create_dataset= False
-    # process_dataset= False
+    #create_dataset= False
+    #process_dataset= True
     # splits=[4,1,1]
     # batch_size= 16
 
@@ -106,31 +108,15 @@ def main():
     #TODO: Run it with create_dataset=True and 28*2*2*2*2 patch_size
     # then change create_dataset=False and change patch_size to any integer you want dividing 28*2*2*2*2 (to avoid creating the dataset again)
     # particularly this allow for patch_size 224 (required for pretrained resnets)
-    hyperparameters = {
-        "patch_size" : 224,
-        "filter_white" : True,
-        "filter_threshold": 0.8,
-        "angle" : 30,
-        "rotations" : [0],
-        "mean": [-246.35193671, 57.03964288],
-        "covariance" : [[106196.72698492, -24666.11304593], [-24666.11304593, 113349.22307974]]
-    }
 
-    #import gps error
-    gps_error = get_gps_error()
+    path_to_main = os.path.dirname(__file__) 
+    with open(f"{path_to_main}/config.json", "r") as cfg:
+        hyperparameters = json.load(cfg)
 
-    #TODO: Change path names to your own local directories
     paths = {
-        "reforestree" : "/Users/victoriabarenne/ai4good/ReforesTree/",
-        "dataset" : "/Users/victoriabarenne/ai4good/dataset/"
+        "dataset": hyperparameters["dataset"], 
+        "reforestree" : hyperparameters["reforestree"]
     }
-
-    '''
-    paths = {
-        "reforestree" : "data/reforestree/",
-        "dataset" : "data/dataset/"
-    }
-    '''
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
@@ -142,7 +128,7 @@ def main():
     if process_dataset:
         data = process(trees.site.unique(), hyperparameters, paths)
     else:
-        data= df=pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
+        data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
 
     #TODO: fix Dataloader so that it supports the following transform
@@ -171,11 +157,11 @@ def main():
 
     #Training a simple model
     simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
-    train(simple_cnn, training_hyperparameters, train_loader)
+    #train(simple_cnn, training_hyperparameters, train_loader)
 
     #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
     resnet_benchmark= Resnet18Benchmark()
-    train(resnet_benchmark, training_hyperparameters, train_loader)
+    #train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()

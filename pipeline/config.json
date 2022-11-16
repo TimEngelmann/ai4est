@@ -1,0 +1,24 @@
+{
+    "patch_size": 224,
+    "filter_white": true,
+    "filter_threshold": 0.8,
+    "rotations": [
+        0
+    ],
+    "mean": [
+        -246.35193671,
+        57.03964288
+    ],
+    "covariance": [
+        [
+            106196.72698492,
+            -24666.11304593
+        ],
+        [
+            -24666.11304593,
+            113349.22307974
+        ]
+    ],
+    "dataset" : "/Users/jan/ai4good/data/dataset/",
+    "reforestree" : "/Users/jan/ai4good/data/reforestree/"
+}
