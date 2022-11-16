@@ -3,6 +3,7 @@ import glob
 import logging
 import torch
 from torchvision.transforms.functional import rotate
+from torchvision.io import read_image, write_png
 import numpy as np
 import pandas as pd
 import cv2
@@ -45,10 +46,9 @@ def process_site(df, hyperparameters, paths, site):
     img = cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
     h, w, _ = img.shape
 
-    site_data = np.empty((4, h, w))
-    site_data[:3, ] = np.moveaxis(np.asarray(img), -1, 0)
-    site_data[3, ] = np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy")
-    site_data = torch.from_numpy(site_data)
+    site_data = torch.empty((4, h, w))
+    site_data[:3, ] = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")
+    site_data[3, ] = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
 
     # start
     rotations = hyperparameters["rotations"]
@@ -95,15 +95,12 @@ def process_site(df, hyperparameters, paths, site):
         for idx, patch in filtered_df_angle.iterrows():
             i, j = patch["site_index"]
             img = site_data[:3,i,j,]
-            img = torch.moveaxis(img, 0, -1)
             image_path = "patches/" + f"{site}_{angle}_{idx}.png"
-            cv2.imwrite(paths["dataset"] + image_path, img.numpy())
             filtered_df_angle.loc[idx, "path"] = image_path
-            paths_output.append(image_path)
+
+            write_png(img, image_path)
 
         df = pd.concat((df, filtered_df_angle)) 
-
-    assert (df.loc[df.site==site, "path"] == paths_output).all()
 
     return df
 

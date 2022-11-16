@@ -6,7 +6,7 @@ launch.json
 
 #Ignore pycache
 *.pyc
-*/__pycache__
+__pycache__/
 
 
 #Ignore logging files
