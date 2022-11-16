@@ -12,7 +12,7 @@ import argparse
 from PIL import Image
 import os
 import json
-from IPython import embed
+# from IPython import embed
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
@@ -43,8 +43,6 @@ def get_args():
                                         "If summing up to 1, the data will be split randomly across each site,"
                                         "if summing up to 6, the data data will be split by site")
     return ap.parse_args()
-
-
 
 
 def create_data(paths, hyperparameters, trees):
@@ -91,21 +89,21 @@ def main():
     logging.basicConfig(filename="pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
-    #TODO: comment this section out to run the code without an argparser
-    args = get_args()
-    create_dataset= args.createpatches
-    process_dataset=args.processpatches
-    splits=args.splitting
-    batch_size= args.batchsize
+    # #TODO REMINDER: comment this section out to run the code without an argparser
+    # args = get_args()
+    # create_dataset= args.createpatches
+    # process_dataset=args.processpatches
+    # splits=args.splitting
+    # batch_size= args.batchsize
 
-    #TODO: Uncomment this section to change the following hyperparameters without using an argparser
-    #create_dataset= False
-    #process_dataset= True
-    # splits=[4,1,1]
-    # batch_size= 16
+    #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
+    create_dataset= False
+    process_dataset= False
+    splits=[4,1,1]
+    batch_size= 16
 
     # hyperparameters
-    #TODO: Run it with create_dataset=True and 28*2*2*2*2 patch_size
+    #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
     # then change create_dataset=False and change patch_size to any integer you want dividing 28*2*2*2*2 (to avoid creating the dataset again)
     # particularly this allow for patch_size 224 (required for pretrained resnets)
 
@@ -130,15 +128,13 @@ def main():
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.Normalize((0.1307, 0, 0), (0.3081, 1, 1))])
 
-    #TODO: fix Dataloader so that it supports the following transform
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(
-            (0.1307,0,0), (0.3081,0,0))])
+    transform = None
 
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data,
-                                                                 splits=splits, batch_size=batch_size)
+    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data, splits=splits,
+                                                                     batch_size=batch_size, transform=transform)
 
     #To check that the dataloader works as intended
     batch_example= next(iter(train_loader))
@@ -150,17 +146,23 @@ def main():
         "loss_fn": nn.MSELoss(),
         "log_interval": 1,
         "device": "cpu",
-        "optimizer": "amsgrad" #only available optimizer atm, will implement the possibility for other methods later
+        #TODO: Add mode options when it come to optimizer expect the Adam and ASMgrad
+        "optimizer": "amsgrad"
     }
+
     if torch.cuda.is_available():
         training_hyperparameters["device"]="cuda"
+    elif torch.has_mps:
+        training_hyperparameters["device"]="mps"
+
+    #TODO: Find a good one :)
 
     #Training a simple model
     simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
-    #train(simple_cnn, training_hyperparameters, train_loader)
+    train(simple_cnn, training_hyperparameters, train_loader)
 
     #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    resnet_benchmark= Resnet18Benchmark()
+    # resnet_benchmark= Resnet18Benchmark()
     #train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
