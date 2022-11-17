@@ -86,7 +86,8 @@ def create_data(paths, hyperparameters, trees):
 
 
 def main():
-    logging.basicConfig(filename="pipeline.log", level=logging.INFO, 
+    path_to_main = os.path.dirname(__file__) 
+    logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
     # #TODO REMINDER: comment this section out to run the code without an argparser
@@ -97,17 +98,16 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    #create_dataset= False
-    #process_dataset= True
-    #splits=[4,1,1]
-    #batch_size= 16
+    create_dataset= False
+    process_dataset= True
+    splits=[4,1,1]
+    batch_size= 16
 
     # hyperparameters
     #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
     # then change create_dataset=False and change patch_size to any integer you want dividing 28*2*2*2*2 (to avoid creating the dataset again)
     # particularly this allow for patch_size 224 (required for pretrained resnets)
 
-    path_to_main = os.path.dirname(__file__) 
     with open(f"{path_to_main}/config.json", "r") as cfg:
         hyperparameters = json.load(cfg)
 
@@ -115,6 +115,10 @@ def main():
         "dataset": hyperparameters["dataset"], 
         "reforestree" : hyperparameters["reforestree"]
     }
+
+    if hyperparameters["cluster"]:
+        paths["dataset"] == os.environ.get("TMPDIR")
+        paths["reforestree"] == os.environ.get("TMPDIR") + "/reforestree"
 
     trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
@@ -158,12 +162,12 @@ def main():
     #TODO: Find a good one :)
 
     #Training a simple model
-    simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
-    train(simple_cnn, training_hyperparameters, train_loader)
+    #simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
+    #train(simple_cnn, training_hyperparameters, train_loader)
 
     #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    # resnet_benchmark= Resnet18Benchmark()
-    #train(resnet_benchmark, training_hyperparameters, train_loader)
+    resnet_benchmark= Resnet18Benchmark()
+    train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()

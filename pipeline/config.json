@@ -5,6 +5,7 @@
     "rotations": [
         0
     ],
+    "cluster": false,
     "mean": [
         -246.35193671,
         57.03964288
