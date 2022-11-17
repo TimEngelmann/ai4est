@@ -6,7 +6,6 @@ from torchvision.transforms.functional import rotate
 from torchvision.io import read_image, write_png
 import numpy as np
 import pandas as pd
-import cv2
 
 
 def get_upper_left(patch_size, img_shape):
@@ -45,6 +44,7 @@ def process_site(df, hyperparameters, paths, site):
     # load image and carbon distribution and place them into site_data
     img = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")[:3, ]
     carbon = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
+    carbon = carbon.view(1, carbon.shape[0], carbon.shape[1])
 
     # start
     rotations = hyperparameters["rotations"]
@@ -66,15 +66,15 @@ def process_site(df, hyperparameters, paths, site):
             carbon = rotate(carbon, angle)
             img = rotate(img, angle)
     
-        img = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
-        carbon = carbon.unfold(0, patch_size,  patch_size).unfold(1, patch_size, patch_size)
-        df_angle["carbon"] = carbon.sum(dim=(-1,-2)).reshape(-1)         
+        patches = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+        carbon_patches = carbon.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+        df_angle["carbon"] = carbon_patches.sum(dim=(-1,-2)).reshape(-1)         
 
-        del carbon
-        
+        del carbon_patches
+
         #filtering empty patches
         logging.info("Filtering white patches")
-        is_white = ((img == 0).sum(dim=(0, -1,-2)) > filter_threshold * patch_size ** 2)
+        is_white = ((patches == 0).sum(dim=(0, -1,-2)) > filter_threshold * patch_size ** 2)
         filter_series = df_angle.apply(lambda row : not is_white[row["site_index"]], axis=1)
         filtered_df_angle = df_angle[filter_series]
 
@@ -97,7 +97,7 @@ def process_site(df, hyperparameters, paths, site):
             image_path = "patches/" + f"{site}_{angle}_{idx}.png"
             filtered_df_angle.loc[idx, "path"] = image_path
 
-            write_png(img[:, i, j, ], paths["dataset"] + image_path)
+            write_png(patches[:, i, j, ], paths["dataset"] + image_path)
 
         df = pd.concat((df, filtered_df_angle)) 
 

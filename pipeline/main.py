@@ -97,8 +97,8 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    create_dataset= True
-    process_dataset= True
+    create_dataset= False
+    process_dataset= False
     splits=[4,1,1]
     batch_size= 16
 
