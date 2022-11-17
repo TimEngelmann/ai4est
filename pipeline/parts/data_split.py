@@ -1,4 +1,4 @@
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from pathlib import Path
 import numpy as np
 from torchvision.transforms import ToTensor
@@ -105,8 +105,40 @@ def train_val_test_dataset(path: str, data:pd.DataFrame, splits, transform):
 
 def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size, transform=None):
     train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, data, splits, transform)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     return train_loader, val_loader, test_loader
+
+
+def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str):
+    """
+    Compute the mean and std over the entire dataset. 
+    """
+    patch_size = hyperparameters["patch_size"]
+
+    dataset = PatchesDataSet(path, data)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
+
+    mean = torch.zeros(3)
+    std = torch.zeros(3)
+    count = len(data)  * patch_size ** 2
+    for batch in dataloader:
+        imgs = batch[0]
+        batch_samples = imgs.size(0)
+        imgs = imgs.view(batch_samples, 3, -1) / 256
+        mean = mean + imgs.sum((0,-1))
+
+    mean = mean * 256 / count
+
+    for batch in dataloader:
+        imgs = batch[0]
+        batch_samples = imgs.size(0)
+        imgs = imgs.view(batch_samples, 3, -1)
+        imgs = torch.moveaxis(imgs, 1, -1)
+        std = std + ((imgs - mean) ** 2).sum((0,1))
+
+    std = torch.sqrt((std / count)) 
+
+    return mean, std

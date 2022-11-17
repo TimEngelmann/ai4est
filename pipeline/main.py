@@ -7,7 +7,7 @@ from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.helper.constants import get_gps_error
 from parts.processing import process
-from parts.data_split import train_val_test_dataloader
+from parts.data_split import train_val_test_dataloader, compute_mean
 import argparse
 from PIL import Image
 import os
@@ -16,8 +16,7 @@ import json
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
-import torchvision
-
+from torchvision.transforms import Normalize
 
 #argument parser
 def str2bool(v):
@@ -98,7 +97,7 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    create_dataset= False
+    create_dataset= True
     process_dataset= True
     splits=[4,1,1]
     batch_size= 16
@@ -137,6 +136,11 @@ def main():
 
     transform = None
 
+    if hyperparameters["normalize"]:
+        mean, std = compute_mean(hyperparameters, data, paths["dataset"])
+        transform = Normalize(mean, std) 
+
+
     train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data, splits=splits,
                                                                      batch_size=batch_size, transform=transform)
 
@@ -166,8 +170,8 @@ def main():
     #train(simple_cnn, training_hyperparameters, train_loader)
 
     #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    resnet_benchmark= Resnet18Benchmark()
-    train(resnet_benchmark, training_hyperparameters, train_loader)
+    #resnet_benchmark= Resnet18Benchmark()
+    #train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()
