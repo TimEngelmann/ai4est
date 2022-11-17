@@ -48,7 +48,7 @@ class SimpleCNN(nn.Module):
 class Resnet18Benchmark(nn.Module):
     def __init__(self):
         super().__init__()
-        self.model= models.resnet18()
+        self.model= models.resnet18()#weights=models.ResNet18_Weights.IMAGENET1K_V1)
         self.model.fc= nn.Linear(512,1) #Change the final linear layer
         self.activation= nn.ReLU()
 

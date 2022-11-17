@@ -80,7 +80,7 @@ def create_data(paths, hyperparameters, trees):
 
 
         np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
-        im = Image.fromarray(np.moveaxis(img, 0, -1))[:3,]
+        im = Image.fromarray(np.moveaxis(img, 0, -1)[:,:,:3])
         im.save(paths["dataset"] + "sites/" + f"{site}_image.png")    
 
 
@@ -169,9 +169,9 @@ def main():
     #simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
     #train(simple_cnn, training_hyperparameters, train_loader)
 
-    #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    #resnet_benchmark= Resnet18Benchmark()
-    #train(resnet_benchmark, training_hyperparameters, train_loader)
+    # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
+    # resnet_benchmark= Resnet18Benchmark()
+    # train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()
