@@ -81,7 +81,7 @@ def create_data(paths, hyperparameters, trees):
 
 
         np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
-        im = Image.fromarray(np.moveaxis(img, 0, -1))[:3,]
+        im = Image.fromarray(np.moveaxis(img, 0, -1)[:,:,:3])
         im.save(paths["dataset"] + "sites/" + f"{site}_image.png")    
 
 
@@ -97,10 +97,10 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    #create_dataset= False
-    #process_dataset= True
-    #splits=[4,1,1]
-    #batch_size= 16
+    # create_dataset= False
+    # process_dataset= True
+    # splits=[4,1,1]
+    # batch_size= 16
 
     # hyperparameters
     #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
@@ -161,9 +161,9 @@ def main():
     simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
     train(simple_cnn, training_hyperparameters, train_loader)
 
-    #Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
+    # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
     # resnet_benchmark= Resnet18Benchmark()
-    #train(resnet_benchmark, training_hyperparameters, train_loader)
+    # train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()
