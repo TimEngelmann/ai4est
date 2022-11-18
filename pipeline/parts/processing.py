@@ -128,4 +128,6 @@ def process(sites, hyperparameters, paths):
 
     df.to_csv(paths["dataset"] + "patches_df.csv")
 
+    #Make df index regular again 
+    df.reset_index()
     return df

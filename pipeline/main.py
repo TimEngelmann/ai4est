@@ -98,7 +98,7 @@ def main():
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
-    process_dataset= True
+    process_dataset= False
     splits=[4,1,1]
     batch_size= 16
 
@@ -134,6 +134,7 @@ def main():
         data = process(trees.site.unique(), hyperparameters, paths)
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
+        data.reset_index()
 
     logging.info("Dataset has %s elements", len(data))
     
