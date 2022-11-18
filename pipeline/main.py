@@ -98,7 +98,7 @@ def main():
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
-    process_dataset= False
+    process_dataset= True
     splits=[4,1,1]
     batch_size= 16
 
@@ -110,16 +110,20 @@ def main():
     with open(f"{path_to_main}/config.json", "r") as cfg:
         hyperparameters = json.load(cfg)
 
-    paths = {
-        "dataset": hyperparameters["dataset"], 
-        "reforestree" : hyperparameters["reforestree"]
-    }
 
     if hyperparameters["cluster"]:
-        paths["dataset"] == os.environ.get("TMPDIR")
-        paths["reforestree"] == os.environ.get("TMPDIR") + "/reforestree"
+        logging.info("Changing paths to compute node local scratch: %s", os.environ.get("TMPDIR"))
+        paths = {
+                "dataset" : os.environ.get("TMPDIR") + "/",
+                "reforestree" : os.environ.get("TMPDIR") + "/reforestree/"
+        }
+    else:
+        paths = {
+            "dataset": hyperparameters["dataset"], 
+            "reforestree" : hyperparameters["reforestree"]
+        }
 
-    trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
+    trees = pd.read_csv(path_to_main + "/field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
     if create_dataset:
@@ -131,12 +135,12 @@ def main():
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
-    # transform = torchvision.transforms.Compose([
-    #     torchvision.transforms.Normalize((0.1307, 0, 0), (0.3081, 1, 1))])
-
+    logging.info("Dataset has %s elements", len(data))
+    
     transform = None
 
     if hyperparameters["normalize"]:
+        logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"])
         transform = Normalize(mean, std) 
 
@@ -149,18 +153,20 @@ def main():
 
     #Training hyperparameters
     training_hyperparameters = {
-        "learning_rate" : 5 * 1e-4,
-        "n_epochs" : 1,
+        "learning_rate" : 1e-6,
+        "n_epochs" : 10,
         "loss_fn": nn.MSELoss(),
         "log_interval": 1,
         "device": "cpu",
-        #TODO: Add mode options when it come to optimizer expect the Adam and ASMgrad
+        #TODO: Add mode options when it come to optimizer expect the Adam and AMSGrad
         "optimizer": "amsgrad"
     }
 
     if torch.cuda.is_available():
+        logging.info("Using cuda")
         training_hyperparameters["device"]="cuda"
     elif torch.has_mps:
+        logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
     #TODO: Find a good one :)
@@ -170,8 +176,8 @@ def main():
     #train(simple_cnn, training_hyperparameters, train_loader)
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    # resnet_benchmark= Resnet18Benchmark()
-    # train(resnet_benchmark, training_hyperparameters, train_loader)
+    #resnet_benchmark= Resnet18Benchmark()
+    #train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()

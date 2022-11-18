@@ -119,7 +119,7 @@ def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str):
     patch_size = hyperparameters["patch_size"]
 
     dataset = PatchesDataSet(path, data)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=32, False)
 
     mean = torch.zeros(3)
     std = torch.zeros(3)
