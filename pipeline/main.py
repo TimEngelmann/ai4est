@@ -110,7 +110,7 @@ def main():
     with open(f"{path_to_main}/config.json", "r") as cfg:
         hyperparameters = json.load(cfg)
 
-
+    #Setting paths to local scratch when running on cluster
     if hyperparameters["cluster"]:
         logging.info("Changing paths to compute node local scratch: %s", os.environ.get("TMPDIR"))
         paths = {
@@ -123,7 +123,7 @@ def main():
             "reforestree" : hyperparameters["reforestree"]
         }
 
-    trees = pd.read_csv(path_to_main + "/field_data.csv")
+    trees = pd.read_csv(paths["reforestree"] + "/field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
     if create_dataset:
@@ -139,6 +139,7 @@ def main():
     
     transform = None
 
+    #Computing mean and std of pixels and normailzing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"])
