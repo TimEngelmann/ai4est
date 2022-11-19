@@ -1,0 +1,13 @@
+data/
+*.ipynb_checkpoints
+*.DS_Store
+original_code/
+launch.json
+pipeline/config.json
+
+#Ignore pycache
+*.pyc
+__pycache__/
+
+#Ignore logging files
+*.log
