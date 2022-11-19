@@ -56,8 +56,11 @@ def compute_carbon_distribution(site, img_shape, trees, mean, cov):
             gaussian_tree = gaussian_tree[:max_y_tree - (end_y - max_y), :]
         carbon_distribution[max(start_y, 0):min(end_y, max_y), max(start_x, 0):min(end_x, max_x)] += gaussian_tree
 
+    '''
     #normalizing distribution so that total carbon mass agrees with field data
     total_carbon_site = trees_site["carbon"].sum()
     total_carbon_distribution = carbon_distribution.sum()
+    carbon_distribution = carbon_distribution * total_carbon_site / total_carbon_distribution
+    '''
 
-    return carbon_distribution * total_carbon_site / total_carbon_distribution
+    return carbon_distribution

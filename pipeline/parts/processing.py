@@ -42,16 +42,16 @@ def process_site(df, hyperparameters, paths, site):
     logging.info("Processing data for site %s", site)
     
     # load image and carbon distribution and place them into site_data
-    img = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")[:3, ]
-    carbon = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
-    carbon = carbon.view(1, carbon.shape[0], carbon.shape[1])
+    img_0 = read_image(paths["dataset"] + "sites/" + f"{site}_image.png")[:3, ]
+    carbon_0 = torch.from_numpy(np.load(paths["dataset"] + "sites/" + f"{site}_carbon.npy"))
+    carbon_0 = carbon_0.view(1, carbon_0.shape[0], carbon_0.shape[1])
 
     # start
     rotations = hyperparameters["rotations"]
     patch_size = hyperparameters["patch_size"]
     filter_threshold = hyperparameters["filter_threshold"]
     
-    _, site_index = get_upper_left(patch_size, img.shape)
+    _, site_index = get_upper_left(patch_size, img_0.shape)
    
     paths_output = []
     for angle in rotations:
@@ -62,9 +62,8 @@ def process_site(df, hyperparameters, paths, site):
         df_angle["site"] = [site] * len(df_angle)
         df_angle["patch size"] = [patch_size] * len(df_angle)
 
-        if angle != 0.0:
-            carbon = rotate(carbon, angle)
-            img = rotate(img, angle)
+        carbon = rotate(carbon_0, angle)
+        img = rotate(img_0, angle)
     
         patches = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
         carbon_patches = carbon.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
