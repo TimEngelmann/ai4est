@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from scipy.stats import multivariate_normal
 
 
@@ -62,5 +63,9 @@ def compute_carbon_distribution(site, img_shape, trees, mean, cov):
     total_carbon_distribution = carbon_distribution.sum()
     carbon_distribution = carbon_distribution * total_carbon_site / total_carbon_distribution
     '''
+
+    if carbon_distribution.sum() != trees_site.loc[trees_site.carbon < carbon_threshold, "carbon"].sum():
+        offset = abs(carbon_distribution.sum() - trees_site.loc[trees_site.carbon < carbon_threshold, "carbon"].sum())
+        logging.warning("Total carbon in distribution is off by %s", offset)
 
     return carbon_distribution

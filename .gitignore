@@ -11,3 +11,10 @@ __pycache__/
 
 #Ignore logging files
 *.log
+
+#Ignore plots
+*.pdf
+*.png
+
+#Ignore notebooks in main folder
+/*ipynb
