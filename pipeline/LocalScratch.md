@@ -26,7 +26,8 @@
     ```
     os.environ.get("TMPDIR") + "/path_on_local_scratch/filename"
     ```
-    if you want to access any of the files copied in step 2.
+    if you want to access any of the files copied in step 2. Important: make sure that the processed dataset will be stored in the TMPDIR,
+    otherwise the whole setup is pointless.
     
 In total our submit script should look something like this
 
