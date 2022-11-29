@@ -7,6 +7,7 @@ import rasterio
 import rasterio.mask
 import geopandas as gpd
 import pandas as pd
+import alphashape
 
 def get_field_data(site:str, path_to_data:str) -> gpd.GeoDataFrame:
     """
@@ -45,7 +46,7 @@ def get_wwf_site_data(site, path_to_data):
 def get_wwf_boundary(site, path):
     raise NotImplementedError()
 
-def create_boundary(site:str, path_to_data:str, convex_hull=True):
+def create_boundary(site:str, path_to_data:str, shape="convex_hull"):
     """
     Creates a boundary for the plot at the specified site
     using either the collected field data or the site data
@@ -59,10 +60,14 @@ def create_boundary(site:str, path_to_data:str, convex_hull=True):
             generate the boundary
     """
 
-    if convex_hull:
+    if shape == "convex_hull":
         field_data = get_field_data(site, path_to_data)
         boundary = field_data.unary_union.convex_hull
         boundary = gpd.GeoSeries({"geometry" : boundary})
+    elif shape == "alpha_shape":
+        field_data = get_field_data(site, path_to_data)
+        alpha_shape = alphashape.alphashape(field_data[['lon', 'lat']].values, 25000)
+        boundary = gpd.GeoSeries({"geometry" : alpha_shape})
     else:
         boundary = get_wwf_boundary(site, path_to_data).boundary
 

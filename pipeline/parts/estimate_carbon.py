@@ -3,7 +3,7 @@ import logging
 from scipy.stats import multivariate_normal
 
 
-def compute_carbon_distribution(site, img_shape, trees, mean, cov):
+def compute_carbon_distribution(site, img_shape, trees, mean, cov, carbon_threshold=50, tree_density=False):
     """
     Computing the distribution of carbon for a specified
     site. We assume that the carbon is distributed normally
@@ -25,7 +25,6 @@ def compute_carbon_distribution(site, img_shape, trees, mean, cov):
     """
     # calculate carbon distributions with gaussian distribution
     sigma_multiple = 10
-    carbon_threshold = 50
     
     max_x_tree = int(sigma_multiple * np.sqrt(cov[0,0]))
     max_y_tree = int(sigma_multiple * np.sqrt(cov[1,1]))
@@ -43,6 +42,8 @@ def compute_carbon_distribution(site, img_shape, trees, mean, cov):
     carbon_distribution = np.zeros((img_shape[1], img_shape[2]))
     for _, tree in trees_site[trees_site.carbon < carbon_threshold].iterrows():
         gaussian_tree = gaussian * tree.carbon
+        if tree_density:
+            gaussian_tree = gaussian
         start_x = int(tree.X - max_x_tree/2)
         start_y = int(tree.Y - max_y_tree/2)
         end_x = int(tree.X + max_x_tree/2)

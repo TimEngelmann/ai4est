@@ -16,7 +16,7 @@ import json
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
-from torchvision.transforms import Normalize
+from torchvision.transforms import Compose, Normalize, Resize
 
 #argument parser
 def str2bool(v):
@@ -52,6 +52,19 @@ def create_data(paths, hyperparameters, trees):
 
     patch_size = hyperparameters["patch_size"]
 
+    carbon_threshold = 50
+    if hyperparameters["carbon_threshold"]:
+        carbon_threshold = hyperparameters["carbon_threshold"]
+
+    tree_density = False
+    if hyperparameters["tree_density"]:
+        tree_density = hyperparameters["tree_density"]
+
+    boundary_shape = "convex_hull"
+    if hyperparameters["boundary_shape"]:
+        boundary_shape = hyperparameters["boundary_shape"]
+
+
     # creating folder "paths["dataset"]/processed" if it doesn't exist
     if not os.path.exists(paths["dataset"] + "sites"):
         logging.info("Creating directory %s", paths["dataset"] + "sites")
@@ -67,7 +80,7 @@ def create_data(paths, hyperparameters, trees):
             covariance = np.array(hyperparameters["covariance"])
         mean = np.array(hyperparameters["mean"])
 
-        boundary = create_boundary(site, paths["reforestree"])
+        boundary = create_boundary(site, paths["reforestree"], shape=boundary_shape)
         img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
 
         #masking the drone image using the boundary
@@ -75,7 +88,7 @@ def create_data(paths, hyperparameters, trees):
             img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
         img = pad(img, patch_size) #padding image to make patches even
-        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance)
+        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance, carbon_threshold, tree_density)
         assert img.shape[1:] == carbon_distribution.shape
 
 
@@ -97,8 +110,8 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    create_dataset= True
-    process_dataset= True
+    create_dataset= False
+    process_dataset= False
     splits=[4,1,1]
     batch_size= 16
 
@@ -129,7 +142,6 @@ def main():
     if create_dataset:
         logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
-
     if process_dataset:
         data = process(trees.site.unique(), hyperparameters, paths)
     else:
@@ -140,13 +152,15 @@ def main():
     logging.info("Dataset has %s elements", len(data))
     
     transform = None
-
+    
     #Computing mean and std of pixels and normailzing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"])
-        transform = Normalize(mean, std) 
-
+        transform = Compose([
+            Normalize(mean, std),
+            Resize((224, 224))
+        ])
 
     train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data, splits=splits,
                                                                      batch_size=batch_size, transform=transform)
@@ -179,8 +193,8 @@ def main():
     #train(simple_cnn, training_hyperparameters, train_loader)
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    #resnet_benchmark= Resnet18Benchmark()
-    #train(resnet_benchmark, training_hyperparameters, train_loader)
+    resnet_benchmark= Resnet18Benchmark()
+    train(resnet_benchmark, training_hyperparameters, train_loader)
 
 
 main()

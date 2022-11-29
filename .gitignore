@@ -4,6 +4,7 @@ data/
 original_code/
 launch.json
 pipeline/config.json
+pipeline/old_config.json
 
 #Ignore pycache
 *.pyc
