@@ -112,8 +112,16 @@ def main():
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
     process_dataset= False
-    splits=[4,1,1]
-    batch_size= 16
+    # splits=[4,1,1]
+    splits = [
+        [0, 1, 2, 3, 4, 5],
+        [1, 2, 3, 4, 5, 0],
+        [2, 3, 4, 5, 0, 1],
+        [3, 4, 5, 0, 1, 2],
+        [4, 5, 0, 1, 2, 3],
+        [5, 0, 1, 2, 3, 4]
+    ]
+    batch_size= 32
 
     # hyperparameters
     #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
@@ -162,18 +170,12 @@ def main():
             Resize((224, 224))
         ])
 
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data, splits=splits,
-                                                                     batch_size=batch_size, transform=transform)
-
-    #To check that the dataloader works as intended
-    batch_example= next(iter(train_loader))
-
     #Training hyperparameters
     training_hyperparameters = {
-        "learning_rate" : 1e-6,
-        "n_epochs" : 10,
+        "learning_rate" : 1e-3,
+        "n_epochs" : 50,
         "loss_fn": nn.MSELoss(),
-        "log_interval": 1,
+        "log_interval": 10,
         "device": "cpu",
         #TODO: Add mode options when it come to optimizer expect the Adam and AMSGrad
         "optimizer": "amsgrad"
@@ -186,15 +188,52 @@ def main():
         logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
-    #TODO: Find a good one :)
-
-    #Training a simple model
-    #simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
-    #train(simple_cnn, training_hyperparameters, train_loader)
+    sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
+             'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
+             'Nestor Macias RGB']
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    resnet_benchmark= Resnet18Benchmark()
-    train(resnet_benchmark, training_hyperparameters, train_loader)
+    for i in range(len(splits)):
+        logging.info("Training on sites {}".format(splits[i][:4]))
+        logging.info("Validating on site number {}".format(splits[i][4]))
+        logging.info("Testing on site number {}".format(splits[i][5]))
+        train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits[i],
+                                                                            batch_size=batch_size, transform=transform)
 
+        site_name = sites[splits[i][-1]]
+        resnet_benchmark = Resnet18Benchmark()
+        train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
+
+    final_csv = pd.read_csv(paths["dataset"] + "patches_df.csv")
+    predictions = []
+    target = []
+
+    # site = "Nestor Macias RGB"
+    # final_csv = final_csv[final_csv.site == site]
+    nm = pd.read_csv('Nestor Macias RGB.csv')
+    la = pd.read_csv('Leonor Aspiazu RGB.csv')
+    cva = pd.read_csv('Carlos Vera Arteaga RGB.csv')
+    cvg = pd.read_csv('Carlos Vera Guevara RGB.csv')
+    fp = pd.read_csv('Flora Pluas RGB.csv')
+    mm = pd.read_csv('Manuel Macias RGB.csv')
+
+    predictions.append(nm['preds'].values.tolist())
+    predictions.append(la['preds'].values.tolist())
+    predictions.append(cva['preds'].values.tolist())
+    predictions.append(cvg['preds'].values.tolist())
+    predictions.append(fp['preds'].values.tolist())
+    predictions.append(mm['preds'].values.tolist())
+    predictions = [item for sublist in predictions for item in sublist]
+    target.append(nm['true_value'].values.tolist())
+    target.append(la['true_value'].values.tolist())
+    target.append(cva['true_value'].values.tolist())
+    target.append(cvg['true_value'].values.tolist())
+    target.append(fp['true_value'].values.tolist())
+    target.append(mm['true_value'].values.tolist())
+    target = [item for sublist in target for item in sublist]
+
+    final_csv['predictions'] = predictions
+    final_csv['true_value'] = target
+    final_csv.to_csv('predictions.csv')
 
 main()

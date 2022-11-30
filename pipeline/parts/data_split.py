@@ -15,8 +15,8 @@ def create_split_dataframe(path: str, data:pd.DataFrame, splits):
             summing up to 1 for method "across_sites"
             summing up to 6 for method "by_site"
     """
-    assert(len(splits)==3)
-    assert((sum(splits)==1) or (sum(splits)==6))
+    assert((len(splits)==3) or (len(splits)==6))
+    assert((sum(splits)==1) or (sum(splits)==6) or (sum(splits)==15))
     sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
              'Nestor Macias RGB']
@@ -51,12 +51,25 @@ def create_split_dataframe(path: str, data:pd.DataFrame, splits):
             data_site = data.loc[data['site'] == sites[i]]
             test_dataset = pd.concat([test_dataset, data_site])
 
+    if sum(splits) == 15: #splitting fixed sites
+        train=splits[:4]
+        val=splits[-2]
+        test=splits[-1]
+        assert (len(train) == 4)
+        for i in train:
+            data_site = data.loc[data['site'] == sites[i]]
+            train_dataset = pd.concat([train_dataset, data_site])
+        data_site = data.loc[data['site'] == sites[val]]
+        val_dataset = pd.concat([val_dataset, data_site])
+        data_site = data.loc[data['site'] == sites[test]]
+        test_dataset = pd.concat([test_dataset, data_site])
+
+
     train_dataset = train_dataset.reset_index(drop=True)
     val_dataset = val_dataset.reset_index(drop=True)
     test_dataset = test_dataset.reset_index(drop=True)
 
     return train_dataset, val_dataset, test_dataset
-
 
 class PatchesDataSet(Dataset):
     def __init__(self, path, df, transform=None):
