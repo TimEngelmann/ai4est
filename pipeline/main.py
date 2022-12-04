@@ -17,6 +17,7 @@ from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
 from torchvision.transforms import Normalize
+from benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 
 #argument parser
 def str2bool(v):
@@ -74,6 +75,7 @@ def create_data(paths, hyperparameters, trees):
         with rasterio.open(img_path) as raster:
             img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
+        unpadded_img= img
         img = pad(img, patch_size) #padding image to make patches even
         carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance)
         assert img.shape[1:] == carbon_distribution.shape
@@ -81,7 +83,9 @@ def create_data(paths, hyperparameters, trees):
 
         np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
         im = Image.fromarray(np.moveaxis(img, 0, -1)[:,:,:3])
-        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")    
+        im_unpadded = Image.fromarray(np.moveaxis(unpadded_img, 0, -1)[:, :, :3])
+        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")
+        im_unpadded.save(paths["dataset"] + "sites/" + f"{site}_unpadded_image.png")
 
 
 def main():
@@ -97,8 +101,8 @@ def main():
     # batch_size= args.batchsize
 
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    create_dataset= True
-    process_dataset= True
+    create_dataset= False
+    process_dataset= False
     splits=[4,1,1]
     batch_size= 16
 
@@ -152,7 +156,7 @@ def main():
                                                                      batch_size=batch_size, transform=transform)
 
     #To check that the dataloader works as intended
-    batch_example= next(iter(train_loader))
+    # batch_example= next(iter(train_loader))
 
     #Training hyperparameters
     training_hyperparameters = {
@@ -182,5 +186,11 @@ def main():
     #resnet_benchmark= Resnet18Benchmark()
     #train(resnet_benchmark, training_hyperparameters, train_loader)
 
+    # Dataloaders for the benchmark dataset
+    create_benchmark_dataset()
+    benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
+    train_benchmark, val_benchmark, test_benchmark = train_val_test_dataloader_benchmark(benchmark_dataset, splits=[4, 1, 1],
+                                                                                batch_size=32, transform=Resize(224))
+    tree_img_sampled, carbon_sample, site_sample = next(iter(train_loader))
 
 main()
