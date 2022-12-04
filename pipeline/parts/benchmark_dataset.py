@@ -4,12 +4,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 from IPython import embed
+import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from data_split import create_split_dataframe
+from parts.data_split import create_split_dataframe
 
-def create_benchmark_dataset():
+def create_benchmark_dataset(paths):
     final_df= pd.read_csv(paths["reforestree"]+"mapping/final_dataset.csv")
     my_df= final_df[['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'AGB', 'carbon']]
     sites= np.unique(final_df["img_name"])

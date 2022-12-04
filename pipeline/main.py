@@ -16,8 +16,8 @@ import json
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
-from torchvision.transforms import Normalize
-from benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
+from torchvision.transforms import Normalize, Resize
+from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 
 #argument parser
 def str2bool(v):
@@ -187,7 +187,7 @@ def main():
     #train(resnet_benchmark, training_hyperparameters, train_loader)
 
     # Dataloaders for the benchmark dataset
-    create_benchmark_dataset()
+    create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
     benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
     train_benchmark, val_benchmark, test_benchmark = train_val_test_dataloader_benchmark(benchmark_dataset, splits=[4, 1, 1],
                                                                                 batch_size=32, transform=Resize(224))
