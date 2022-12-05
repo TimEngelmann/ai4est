@@ -16,7 +16,7 @@ import json
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
-from torchvision.transforms import Normalize, Resize
+from torchvision.transforms import Normalize, Resize, Compose
 from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 
 #argument parser
@@ -53,6 +53,19 @@ def create_data(paths, hyperparameters, trees):
 
     patch_size = hyperparameters["patch_size"]
 
+    carbon_threshold = 50
+    if hyperparameters["carbon_threshold"]:
+        carbon_threshold = hyperparameters["carbon_threshold"]
+
+    tree_density = False
+    if hyperparameters["tree_density"]:
+        tree_density = hyperparameters["tree_density"]
+
+    boundary_shape = "convex_hull"
+    if hyperparameters["boundary_shape"]:
+        boundary_shape = hyperparameters["boundary_shape"]
+
+
     # creating folder "paths["dataset"]/processed" if it doesn't exist
     if not os.path.exists(paths["dataset"] + "sites"):
         logging.info("Creating directory %s", paths["dataset"] + "sites")
@@ -68,7 +81,7 @@ def create_data(paths, hyperparameters, trees):
             covariance = np.array(hyperparameters["covariance"])
         mean = np.array(hyperparameters["mean"])
 
-        boundary = create_boundary(site, paths["reforestree"])
+        boundary = create_boundary(site, paths["reforestree"], shape=boundary_shape)
         img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
 
         #masking the drone image using the boundary
@@ -77,7 +90,7 @@ def create_data(paths, hyperparameters, trees):
 
         unpadded_img= img
         img = pad(img, patch_size) #padding image to make patches even
-        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance)
+        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance, carbon_threshold, tree_density)
         assert img.shape[1:] == carbon_distribution.shape
 
 
@@ -103,8 +116,17 @@ def main():
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
     process_dataset= False
-    splits=[4,1,1]
-    batch_size= 16
+    
+    # splits=[4,1,1]
+    splits = [
+        [0, 1, 2, 3, 4, 5],
+        [1, 2, 3, 4, 5, 0],
+        [2, 3, 4, 5, 0, 1],
+        [3, 4, 5, 0, 1, 2],
+        [4, 5, 0, 1, 2, 3],
+        [5, 0, 1, 2, 3, 4]
+    ]
+    batch_size= 32
 
     # hyperparameters
     #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
@@ -133,37 +155,37 @@ def main():
     if create_dataset:
         logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
-
     if process_dataset:
         data = process(trees.site.unique(), hyperparameters, paths)
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
     data = data.reset_index()
+    
+    # benchmark_dataset
+    # create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
+    # benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
 
     logging.info("Dataset has %s elements", len(data))
     
     transform = None
-
+    
     #Computing mean and std of pixels and normailzing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"])
-        transform = Normalize(mean, std) 
 
-
-    train_loader, val_loader, test_loader= train_val_test_dataloader(paths["dataset"], data, splits=splits,
-                                                                     batch_size=batch_size, transform=transform)
-
-    #To check that the dataloader works as intended
-    # batch_example= next(iter(train_loader))
+        transform = Compose([
+            Normalize(mean, std),
+            Resize((224, 224))
+        ])
 
     #Training hyperparameters
     training_hyperparameters = {
-        "learning_rate" : 1e-6,
-        "n_epochs" : 10,
+        "learning_rate" : 1e-3,
+        "n_epochs" : 50,
         "loss_fn": nn.MSELoss(),
-        "log_interval": 1,
+        "log_interval": 10,
         "device": "cpu",
         #TODO: Add mode options when it come to optimizer expect the Adam and AMSGrad
         "optimizer": "amsgrad"
@@ -176,21 +198,57 @@ def main():
         logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
-    #TODO: Find a good one :)
-
-    #Training a simple model
-    #simple_cnn = SimpleCNN(hyperparameters["patch_size"], 3)
-    #train(simple_cnn, training_hyperparameters, train_loader)
+    sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
+             'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
+             'Nestor Macias RGB']
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    #resnet_benchmark= Resnet18Benchmark()
-    #train(resnet_benchmark, training_hyperparameters, train_loader)
+    for i in range(len(splits)):
+        logging.info("Training on sites {}".format(splits[i][:4]))
+        logging.info("Validating on site number {}".format(splits[i][4]))
+        logging.info("Testing on site number {}".format(splits[i][5]))
+        train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits[i],
+                                                                            batch_size=batch_size, transform=transform)
+        
+        '''
+        train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(benchmark_dataset, splits=splits[i],
+                                                                                batch_size=32, transform=transform)
+        '''
+        
+        site_name = sites[splits[i][-1]]
+        resnet_benchmark = Resnet18Benchmark()
+        train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
 
-    # Dataloaders for the benchmark dataset
-    create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
-    benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
-    train_benchmark, val_benchmark, test_benchmark = train_val_test_dataloader_benchmark(benchmark_dataset, splits=[4, 1, 1],
-                                                                                batch_size=32, transform=Resize(224))
-    tree_img_sampled, carbon_sample, site_sample = next(iter(train_loader))
+    final_csv = pd.read_csv(paths["dataset"] + "patches_df.csv")
+    predictions = []
+    target = []
+
+    # site = "Nestor Macias RGB"
+    # final_csv = final_csv[final_csv.site == site]
+    nm = pd.read_csv('Nestor Macias RGB.csv')
+    la = pd.read_csv('Leonor Aspiazu RGB.csv')
+    cva = pd.read_csv('Carlos Vera Arteaga RGB.csv')
+    cvg = pd.read_csv('Carlos Vera Guevara RGB.csv')
+    fp = pd.read_csv('Flora Pluas RGB.csv')
+    mm = pd.read_csv('Manuel Macias RGB.csv')
+
+    predictions.append(nm['preds'].values.tolist())
+    predictions.append(la['preds'].values.tolist())
+    predictions.append(cva['preds'].values.tolist())
+    predictions.append(cvg['preds'].values.tolist())
+    predictions.append(fp['preds'].values.tolist())
+    predictions.append(mm['preds'].values.tolist())
+    predictions = [item for sublist in predictions for item in sublist]
+    target.append(nm['true_value'].values.tolist())
+    target.append(la['true_value'].values.tolist())
+    target.append(cva['true_value'].values.tolist())
+    target.append(cvg['true_value'].values.tolist())
+    target.append(fp['true_value'].values.tolist())
+    target.append(mm['true_value'].values.tolist())
+    target = [item for sublist in target for item in sublist]
+
+    final_csv['predictions'] = predictions
+    final_csv['true_value'] = target
+    final_csv.to_csv('predictions.csv')
 
 main()
