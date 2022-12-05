@@ -16,7 +16,8 @@ import json
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
-from torchvision.transforms import Compose, Normalize, Resize
+from torchvision.transforms import Normalize, Resize, Compose
+from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 
 #argument parser
 def str2bool(v):
@@ -87,6 +88,7 @@ def create_data(paths, hyperparameters, trees):
         with rasterio.open(img_path) as raster:
             img, _ = rasterio.mask.mask(raster, boundary, crop=False)
 
+        unpadded_img= img
         img = pad(img, patch_size) #padding image to make patches even
         carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance, carbon_threshold, tree_density)
         assert img.shape[1:] == carbon_distribution.shape
@@ -94,7 +96,9 @@ def create_data(paths, hyperparameters, trees):
 
         np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
         im = Image.fromarray(np.moveaxis(img, 0, -1)[:,:,:3])
-        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")    
+        im_unpadded = Image.fromarray(np.moveaxis(unpadded_img, 0, -1)[:, :, :3])
+        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")
+        im_unpadded.save(paths["dataset"] + "sites/" + f"{site}_unpadded_image.png")
 
 
 def main():
@@ -112,6 +116,7 @@ def main():
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
     process_dataset= False
+    
     # splits=[4,1,1]
     splits = [
         [0, 1, 2, 3, 4, 5],
@@ -156,6 +161,10 @@ def main():
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
     data = data.reset_index()
+    
+    # benchmark_dataset
+    # create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
+    # benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
 
     logging.info("Dataset has %s elements", len(data))
     
@@ -165,6 +174,7 @@ def main():
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"])
+
         transform = Compose([
             Normalize(mean, std),
             Resize((224, 224))
@@ -199,7 +209,12 @@ def main():
         logging.info("Testing on site number {}".format(splits[i][5]))
         train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits[i],
                                                                             batch_size=batch_size, transform=transform)
-
+        
+        '''
+        train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(benchmark_dataset, splits=splits[i],
+                                                                                batch_size=32, transform=transform)
+        '''
+        
         site_name = sites[splits[i][-1]]
         resnet_benchmark = Resnet18Benchmark()
         train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
