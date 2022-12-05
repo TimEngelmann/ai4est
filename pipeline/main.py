@@ -182,7 +182,7 @@ def main():
 
     #Training hyperparameters
     training_hyperparameters = {
-        "learning_rate" : 1e-3,
+        "learning_rate" : 1e-5,
         "n_epochs" : 50,
         "loss_fn": nn.MSELoss(),
         "log_interval": 1,
