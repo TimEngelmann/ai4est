@@ -149,7 +149,7 @@ def val(model, epoch, val_dataloader, loss_fn, device):
             val_loss += loss_fn(output, target)
             val_epoch_loss += val_loss
 
-            print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
+            # print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
             val_loss = 0
     writer.add_scalar("Val/Epoch", val_epoch_loss, epoch)
     writer.flush()

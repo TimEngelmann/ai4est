@@ -60,7 +60,7 @@ def create_benchmark_dataset(paths):
         tree_crowns_final=pd.concat([tree_crowns_final, new_df], ignore_index=True)
 
     assert(len(tree_crowns_final)== len(tree_crowns_filtered))
-    tree_crowns_final.to_csv(paths["dataset"]+"benchmark_dataset.csv")
+    return tree_crowns_final
 
 # TreeCrown torch Dataset
 class TreeCrown(Dataset):
@@ -77,14 +77,14 @@ class TreeCrown(Dataset):
         in self.df.
         """
         site = self.df["site"][item]
-        image = self.df["tree_img"][item]
+        image =  self.df["tree_img"][item]
         carbon = self.df["carbon"][item]
 
 
         if self.transform is not None:
             image = self.transform(image)
 
-        return image, carbon, site
+        return image, carbon, site, 0
 
 def train_val_test_dataset_benchmark(data:pd.DataFrame, splits, transform=None):
     train, val, test= create_split_dataframe("", data, splits)

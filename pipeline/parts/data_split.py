@@ -125,33 +125,50 @@ def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size,
     return train_loader, val_loader, test_loader
 
 
-def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str):
-    """
-    Compute the mean and std over the entire dataset. 
-    """
-    patch_size = hyperparameters["patch_size"]
+def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str, benchmark_dataset:bool):
+    if not benchmark_dataset:
+        """
+        Compute the mean and std over the entire dataset. 
+        """
+        patch_size = hyperparameters["patch_size"]
 
-    dataset = PatchesDataSet(path, data)
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
+        dataset = PatchesDataSet(path, data)
+        dataloader = DataLoader(dataset, batch_size=32, shuffle=False)
 
-    mean = torch.zeros(3)
-    std = torch.zeros(3)
-    count = len(data)  * patch_size ** 2
-    for batch in dataloader:
-        imgs = batch[0]
-        batch_samples = imgs.size(0)
-        imgs = imgs.view(batch_samples, 3, -1) / 256
-        mean = mean + imgs.sum((0,-1))
+        mean = torch.zeros(3)
+        std = torch.zeros(3)
+        count = len(data)  * patch_size ** 2
+        for batch in dataloader:
+            imgs = batch[0]
+            batch_samples = imgs.size(0)
+            imgs = imgs.view(batch_samples, 3, -1) / 256
+            mean = mean + imgs.sum((0,-1))
 
-    mean = mean * 256 / count
+        mean = mean * 256 / count
 
-    for batch in dataloader:
-        imgs = batch[0]
-        batch_samples = imgs.size(0)
-        imgs = imgs.view(batch_samples, 3, -1)
-        imgs = torch.moveaxis(imgs, 1, -1)
-        std = std + ((imgs - mean) ** 2).sum((0,1))
+        for batch in dataloader:
+            imgs = batch[0]
+            batch_samples = imgs.size(0)
+            imgs = imgs.view(batch_samples, 3, -1)
+            imgs = torch.moveaxis(imgs, 1, -1)
+            std = std + ((imgs - mean) ** 2).sum((0,1))
 
-    std = torch.sqrt((std / count)) 
+        std = torch.sqrt((std / count)) 
+    
+    else:
+        image_data_loader = DataLoader(
+            data.tree_img.values,
+            batch_size=len(data.tree_img.values),
+            shuffle=False,
+            num_workers=0
+        )
+
+        def mean_std(loader):
+            images = next(iter(loader))
+            # shape of images = [b,c,w,h]
+            mean, std = images.mean([0,2,3]), images.std([0,2,3])
+            return mean, std
+
+        mean, std = mean_std(image_data_loader)
 
     return mean, std
