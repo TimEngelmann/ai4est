@@ -21,11 +21,12 @@ def create_benchmark_dataset(paths):
 
     for site in sites:
         df_site= my_df[my_df['img_name']==site]
+        df_site= df_site.reset_index(drop=True)
         image_site= cv2.imread(paths["dataset"] + "sites/" + f"{site}_unpadded_image.png")
 
         for i in range(len(df_site)):
-            tree_coord= np.array(my_df.iloc[i][['Xmin', 'Ymin', 'Xmax', 'Ymax']]).astype(int)
-            carbon= my_df.iloc[i]['carbon'].item()
+            tree_coord= np.array(df_site.iloc[i][['Xmin', 'Ymin', 'Xmax', 'Ymax']]).astype(int)
+            carbon= df_site.iloc[i]['carbon'].item()
             tree_img= image_site[tree_coord[1]:tree_coord[3], tree_coord[0]:tree_coord[2], :]
             new_df=pd.DataFrame([[tree_img, tree_coord, site, carbon]], columns=tree_crowns.columns)
             tree_crowns=pd.concat([tree_crowns, new_df], ignore_index=True)
