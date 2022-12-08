@@ -31,7 +31,7 @@ wwf_name_from_site = {
 }
 
 
-def get_wwf_site_data(site, path_to_data):
+def get_wwf_boundary(site, path_to_data):
     """
     Loads wwf site data and restricts the data
     to the provided site
@@ -40,11 +40,8 @@ def get_wwf_site_data(site, path_to_data):
     path = path_to_data + "wwf_ecuador/Merged_final_plots/Merged_final_plots.shp"
     site_data = gpd.read_file(path)
 
-    return site_data[site_data.Name==name]
+    return site_data[site_data.Name==name].geometry
 
-
-def get_wwf_boundary(site, path):
-    raise NotImplementedError()
 
 def create_boundary(site:str, path_to_data:str, shape="convex_hull"):
     """
@@ -69,6 +66,6 @@ def create_boundary(site:str, path_to_data:str, shape="convex_hull"):
         alpha_shape = alphashape.alphashape(field_data[['lon', 'lat']].values, 25000)
         boundary = gpd.GeoSeries({"geometry" : alpha_shape})
     else:
-        boundary = get_wwf_boundary(site, path_to_data).boundary
+        boundary = get_wwf_boundary(site, path_to_data)
 
     return boundary
