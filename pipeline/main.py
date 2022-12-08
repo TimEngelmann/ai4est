@@ -116,6 +116,7 @@ def main():
     #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
     create_dataset= False
     process_dataset= False
+    benchmark_dataset = True
     
     # splits=[4,1,1]
     splits = [
@@ -126,7 +127,7 @@ def main():
         [4, 5, 0, 1, 2, 3],
         [5, 0, 1, 2, 3, 4]
     ]
-    batch_size= 32
+    batch_size= 64
 
     # hyperparameters
     #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
@@ -157,14 +158,13 @@ def main():
         create_data(paths, hyperparameters, trees)
     if process_dataset:
         data = process(trees.site.unique(), hyperparameters, paths)
+    if benchmark_dataset:
+        # benchmark_dataset
+        data = create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
     data = data.reset_index()
-    
-    # benchmark_dataset
-    # create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
-    # benchmark_dataset= pd.read_csv(paths["dataset"]+ "benchmark_dataset.csv")
 
     logging.info("Dataset has %s elements", len(data))
     
@@ -173,8 +173,8 @@ def main():
     #Computing mean and std of pixels and normailzing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
-        mean, std = compute_mean(hyperparameters, data, paths["dataset"])
-
+        mean, std = compute_mean(hyperparameters, data, paths["dataset"], benchmark_dataset)
+        logging.info("Computed - Mean: {} and Std: {}".format(mean, std))
         transform = Compose([
             Normalize(mean, std),
             Resize((224, 224))
@@ -182,10 +182,10 @@ def main():
 
     #Training hyperparameters
     training_hyperparameters = {
-        "learning_rate" : 1e-3,
+        "learning_rate" : 1e-5,
         "n_epochs" : 50,
         "loss_fn": nn.MSELoss(),
-        "log_interval": 10,
+        "log_interval": 1,
         "device": "cpu",
         #TODO: Add mode options when it come to optimizer expect the Adam and AMSGrad
         "optimizer": "amsgrad"
@@ -207,13 +207,13 @@ def main():
         logging.info("Training on sites {}".format(splits[i][:4]))
         logging.info("Validating on site number {}".format(splits[i][4]))
         logging.info("Testing on site number {}".format(splits[i][5]))
+        '''
         train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits[i],
                                                                             batch_size=batch_size, transform=transform)
+        '''
+        train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(data, splits=splits[i],
+                                                                                batch_size=batch_size, transform=transform)
         
-        '''
-        train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(benchmark_dataset, splits=splits[i],
-                                                                                batch_size=32, transform=transform)
-        '''
         
         site_name = sites[splits[i][-1]]
         resnet_benchmark = Resnet18Benchmark()

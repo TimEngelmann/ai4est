@@ -8,14 +8,14 @@ import torchvision
 # from IPython import embed
 import torch.optim as optim
 # from labml_nn.optimizers.amsgrad import AMSGrad
+import matplotlib.pyplot as plt
 import torchvision.models as models
 from torch.optim import Adam
-from torch.utils.tensorboard import SummaryWriter
 import datetime
 
 
-writer = SummaryWriter()
-log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+# writer = SummaryWriter()
+# log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 class SimpleCNN(nn.Module):
@@ -74,6 +74,9 @@ def train(model, training_hyperparameters, train_loader, val_loader, test_loader
     learning_rate=training_hyperparameters["learning_rate"]
 
     # val_results = pd.DataFrame()
+    epochs = []
+    train_losses = []
+    val_losses = []
 
     logging.info(f"Starting to train the model with {n_epochs} epochs total")
     model.to(device)
@@ -106,15 +109,32 @@ def train(model, training_hyperparameters, train_loader, val_loader, test_loader
                 print(f'[Epoch {epoch + 1}, Batch {batch_id + 1:5d}] loss: {running_loss / log_interval:.3f}')
                 running_loss = 0.0
         # val_results = pd.concat([val_results, results], axis=1)
-        writer.add_scalar("Train/Epoch", epoch_loss, epoch)
+        # writer.add_scalar("Train/Epoch", epoch_loss, epoch)
+        train_losses.append(epoch_loss)
+        epochs.append(epoch + 1)
         epoch_loss = 0
-        writer.flush()
-        val(model, epoch, val_loader, loss_fn, device)
+        # writer.flush()
+        val_loss = val(model, epoch, val_loader, loss_fn, device)
+        print(val_loss)
+        val_losses.append(val_loss.item())
     logging.info(f'Finished Training')
+    plt.plot(epochs, train_losses)
+    plt.plot(epochs, val_losses)
+    plt.title(f'Training Results for {site_name} site')
+    plt.xlabel('Epoch(s)')
+    plt.ylabel('Loss')
+    endrange = (n_epochs // 5) + 1
+    plt.xticks(range(0, endrange * 5, 5))
+    plt.legend(['Train', 'Validation'], loc='upper left')
+    plt.savefig(f'figures/train_val_results_{site_name}.png')
+    plt.clf()
+    logging.info(f'Created Train/Val Figure')
     logging.info(f'Testing Model')
     test_results = test(model, test_loader, loss_fn, device)
-    writer.close()
-    test_results.to_csv('{}.csv'.format(site_name))
+    # writer.close()
+    test_results.to_csv('./testing_results/{}.csv'.format(site_name))
+
+
 
 
 def val(model, epoch, val_dataloader, loss_fn, device):
@@ -151,9 +171,9 @@ def val(model, epoch, val_dataloader, loss_fn, device):
 
             print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
             val_loss = 0
-    writer.add_scalar("Val/Epoch", val_epoch_loss, epoch)
-    writer.flush()
-    val_epoch_loss = 0
+    # writer.add_scalar("Val/Epoch", val_epoch_loss, epoch)
+    # writer.flush()
+    return val_epoch_loss
 
 def test(model, test_dataloader, loss_fn, device):
     '''
@@ -187,7 +207,6 @@ def test(model, test_dataloader, loss_fn, device):
             test_loss += loss_fn(output, target) # sum up batch loss
 
             print('\nTest set: Batch Loss: {:.4f})\n'.format(test_loss))
-            writer.add_scalar("Test/Batch_loss", test_loss, batch_id)
             test_loss = 0
 
     for i in range((len(targets))):
