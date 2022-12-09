@@ -22,7 +22,7 @@ def create_benchmark_dataset(paths):
     for site in sites:
         df_site= my_df[my_df['img_name']==site]
         df_site= df_site.reset_index(drop=True)
-        image_site= cv2.imread(paths["dataset"] + "sites/" + f"{site}_unpadded_image.png")
+        image_site= cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
 
         for i in range(len(df_site)):
             tree_coord= np.array(df_site.iloc[i][['Xmin', 'Ymin', 'Xmax', 'Ymax']]).astype(int)
@@ -97,9 +97,16 @@ def train_val_test_dataset_benchmark(data:pd.DataFrame, splits, transform=None):
 
 def train_val_test_dataloader_benchmark(data: pd.DataFrame, splits, batch_size, transform=None):
     train_dataset, val_dataset, test_dataset= train_val_test_dataset_benchmark(data, splits, transform)
+    assert(len(train_dataset))>0
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    if len(val_dataset)>0:
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    else:
+        val_loader= None
+    if len(test_dataset)>0:
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    else:
+        test_loader= None
 
     return train_loader, val_loader, test_loader
 

@@ -6,133 +6,33 @@ from parts.patches import pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
 from parts.helper.constants import get_gps_error
+from parts.helper.argumentparser import get_args
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader, compute_mean
 import argparse
 from PIL import Image
 import os
 import json
-# from IPython import embed
+from IPython import embed
 from parts.model import SimpleCNN, Resnet18Benchmark, train
 import torch
 import torch.nn as nn
 from torchvision.transforms import Normalize, Resize, Compose
 from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
-
-#argument parser
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
-
-def get_args():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--createpatches", required=False, type=str2bool,
-        default="False",help="boolean for whether to create the patches images dataset")
-    ap.add_argument("-p", "--processpatches", required=False, type=str2bool,
-        default="False",help="boolean for whether to process the patches")
-    ap.add_argument("-b", "--batchsize", required=False, type=int,
-                    default=64, help="batch size for dataloader")
-    ap.add_argument("-s", "--splitting", nargs='+', required=False, type=float,
-                    default=[4,1,1], help="list of length 3 [size_train, size_val, size_test]. "
-                                        "If summing up to 1, the data will be split randomly across each site,"
-                                        "if summing up to 6, the data data will be split by site")
-    return ap.parse_args()
-
-
-def create_data(paths, hyperparameters, trees):
-    """
-    Combining RGB image data and carbon distribution into
-    4-channel image for each site.
-    """
-
-    patch_size = hyperparameters["patch_size"]
-
-    carbon_threshold = 50
-    if hyperparameters["carbon_threshold"]:
-        carbon_threshold = hyperparameters["carbon_threshold"]
-
-    tree_density = False
-    if hyperparameters["tree_density"]:
-        tree_density = hyperparameters["tree_density"]
-
-    boundary_shape = "convex_hull"
-    if hyperparameters["boundary_shape"]:
-        boundary_shape = hyperparameters["boundary_shape"]
-
-
-    # creating folder "paths["dataset"]/processed" if it doesn't exist
-    if not os.path.exists(paths["dataset"] + "sites"):
-        logging.info("Creating directory %s", paths["dataset"] + "sites")
-        os.makedirs(paths["dataset"] + "sites")
-
-    for site in trees.site.unique():
-        logging.info("Creating data for site %s", site)
-
-        #get covariance for normal distribution
-        if isinstance(hyperparameters["covariance"], dict):
-            covariance = np.array(hyperparameters["covariance"][site])
-        else:
-            covariance = np.array(hyperparameters["covariance"])
-        mean = np.array(hyperparameters["mean"])
-
-        boundary = create_boundary(site, paths["reforestree"], shape=boundary_shape)
-        img_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
-
-        #masking the drone image using the boundary
-        with rasterio.open(img_path) as raster:
-            img, _ = rasterio.mask.mask(raster, boundary, crop=False)
-
-        unpadded_img= img
-        img = pad(img, patch_size) #padding image to make patches even
-        carbon_distribution = compute_carbon_distribution(site, img.shape, trees, mean, covariance, carbon_threshold, tree_density)
-        assert img.shape[1:] == carbon_distribution.shape
-
-
-        np.save(paths["dataset"] + "sites/" + f"{site}_carbon", carbon_distribution)
-        im = Image.fromarray(np.moveaxis(img, 0, -1)[:,:,:3])
-        im_unpadded = Image.fromarray(np.moveaxis(unpadded_img, 0, -1)[:, :, :3])
-        im.save(paths["dataset"] + "sites/" + f"{site}_image.png")
-        im_unpadded.save(paths["dataset"] + "sites/" + f"{site}_unpadded_image.png")
+from parts.helper.datacreation import create_data
 
 
 def main():
+    #TODO: set hyperparameters
+    create_dataset= False
+    process_dataset= False
+    benchmark_dataset = False
+    batch_size= 64
+
+
     path_to_main = os.path.dirname(__file__) 
     logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
-
-    # #TODO REMINDER: comment this section out to run the code without an argparser
-    # args = get_args()
-    # create_dataset= args.createpatches
-    # process_dataset=args.processpatches
-    # splits=args.splitting
-    # batch_size= args.batchsize
-
-    #TODO REMINDER: Uncomment this section to change the following hyperparameters without using an argparser
-    create_dataset= False
-    process_dataset= False
-    benchmark_dataset = True
-    
-    # splits=[4,1,1]
-    splits = [
-        [0, 1, 2, 3, 4, 5],
-        [1, 2, 3, 4, 5, 0],
-        [2, 3, 4, 5, 0, 1],
-        [3, 4, 5, 0, 1, 2],
-        [4, 5, 0, 1, 2, 3],
-        [5, 0, 1, 2, 3, 4]
-    ]
-    batch_size= 64
-
-    # hyperparameters
-    #TODO REMINDER: Run it with create_dataset=True and 28*2*2*2*2 patch_size
-    # then change create_dataset=False and change patch_size to any integer you want dividing 28*2*2*2*2 (to avoid creating the dataset again)
-    # particularly this allow for patch_size 224 (required for pretrained resnets)
 
     with open(f"{path_to_main}/config.json", "r") as cfg:
         hyperparameters = json.load(cfg)
@@ -160,17 +60,15 @@ def main():
         data = process(trees.site.unique(), hyperparameters, paths)
     if benchmark_dataset:
         # benchmark_dataset
-        data = create_benchmark_dataset(paths) # can comment this out if the benchmark dataset was already created
+        data = create_benchmark_dataset(paths)
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
     data = data.reset_index()
-
     logging.info("Dataset has %s elements", len(data))
-    
     transform = None
-    
-    #Computing mean and std of pixels and normailzing accordingly
+
+    #Computing mean and std of pixels and normalizing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
         mean, std = compute_mean(hyperparameters, data, paths["dataset"], benchmark_dataset)
@@ -198,26 +96,31 @@ def main():
         logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
-    sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
+    sites = np.array(['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
-             'Nestor Macias RGB']
+             'Nestor Macias RGB'])
+
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
-    for i in range(len(splits)):
-        logging.info("Training on sites {}".format(splits[i][:4]))
-        logging.info("Validating on site number {}".format(splits[i][4]))
-        logging.info("Testing on site number {}".format(splits[i][5]))
-        '''
-        train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits[i],
+    splits = {"training":[], "validation":[], "testing":[]}
+    for i in range(len(sites)):
+        splits["testing"] = [sites[i]]
+        idx = np.array(list(set(np.arange(6)) - set(np.array([i])))).astype(int)
+        splits["training"] = list(sites[idx])
+        logging.info("Training on sites {}".format(splits["training"]))
+        logging.info("Validating on site number {}".format(splits["validation"]))
+        logging.info("Testing on site number {}".format(splits["testing"]))
+        if benchmark_dataset:
+            train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(data, splits=splits,
+                                                                                        batch_size=batch_size, transform=transform)
+        else:
+            train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits,
                                                                             batch_size=batch_size, transform=transform)
-        '''
-        train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(data, splits=splits[i],
-                                                                                batch_size=batch_size, transform=transform)
-        
-        
-        site_name = sites[splits[i][-1]]
+
+        site_name = splits["testing"][0]
         resnet_benchmark = Resnet18Benchmark()
         train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
+
 
     final_csv = pd.read_csv(paths["dataset"] + "patches_df.csv")
     predictions = []

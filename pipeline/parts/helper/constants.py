@@ -1,5 +1,6 @@
 import numpy as np
 
+
 gps_error_rgb = {"Flora Pluas RGB": [0.25, 0.66],
                 "Nestor Macias RGB": [0.6, 0.53],
                 "Manuel Macias RGB": [0.69, 0.30],
@@ -34,3 +35,5 @@ def get_gps_error():
         ocn = np.array([gps_error_ocn[site][0] * 100 /gsd, gps_error_ocn[site][1] * 100 /gsd])
         gps_error[site] = rgb**2 + ocn**2
     return gps_error
+
+
