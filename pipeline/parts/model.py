@@ -66,6 +66,8 @@ class Resnet18Benchmark(nn.Module):
         return out
 
 def train(model, training_hyperparameters, train_loader, val_loader, test_loader, site_name):
+    if val_loader == None:
+        logging.info("No Validation Done!")
 
     loss_fn=training_hyperparameters["loss_fn"]
     n_epochs=training_hyperparameters["n_epochs"]
@@ -114,32 +116,33 @@ def train(model, training_hyperparameters, train_loader, val_loader, test_loader
         epochs.append(epoch + 1)
         epoch_loss = 0
         # writer.flush()
-        val_loss = val(model, epoch, val_loader, loss_fn, device)
-        print(val_loss)
-        val_losses.append(val_loss.item())
+        if val_loader != None:
+            val_loss = val(model, epoch, val_loader, loss_fn, device)
+            print(val_loss)
+            val_losses.append(val_loss.item())
     logging.info(f'Finished Training')
-    plt.plot(epochs, train_losses)
-    plt.plot(epochs, val_losses)
-    plt.title(f'Training Results for {site_name} site')
-    plt.xlabel('Epoch(s)')
-    plt.ylabel('Loss')
-    endrange = (n_epochs // 5) + 1
-    plt.xticks(range(0, endrange * 5, 5))
-    plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(f'figures/train_val_results_{site_name}.png')
-    plt.clf()
-    logging.info(f'Created Train/Val Figure')
+    if val_loader != None:
+        plt.plot(epochs, train_losses)
+        plt.plot(epochs, val_losses)
+        plt.title(f'Training Results for {site_name} site')
+        plt.xlabel('Epoch(s)')
+        plt.ylabel('Loss')
+        endrange = (n_epochs // 5) + 1
+        plt.xticks(range(0, endrange * 5, 5))
+        plt.legend(['Train', 'Validation'], loc='upper left')
+        plt.savefig(f'figures/train_val_results_{site_name}.png')
+        plt.clf()
+        logging.info(f'Created Train/Val Figure')
     logging.info(f'Testing Model')
     test_results = test(model, test_loader, loss_fn, device)
     # writer.close()
     test_results.to_csv('./testing_results/{}.csv'.format(site_name))
 
 
-
-
 def val(model, epoch, val_dataloader, loss_fn, device):
     '''
     A function that is deployed in order to validate a pytorch model.
+
     :param model: a torch model that we are interested in training
     :param epoch: the epoch that is currently being validated
     :param val_dataloader: a torch Dataloader that contains the data meant for validating
@@ -175,9 +178,11 @@ def val(model, epoch, val_dataloader, loss_fn, device):
     # writer.flush()
     return val_epoch_loss
 
+
 def test(model, test_dataloader, loss_fn, device):
     '''
     A function that is deployed in order to test a pytorch model.
+
     :param model: a torch model that we are interested in training
     :param test_dataloader: a torch Dataloader that contains the data meant for testing
     :param device: the device that is used for the training process (CPU or GPU ('cuda'))

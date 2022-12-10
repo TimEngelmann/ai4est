@@ -20,6 +20,7 @@ import torch.nn as nn
 from torchvision.transforms import Normalize, Resize, Compose
 from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 from parts.helper.datacreation import create_data
+from parts.evaluation import report_results
 
 
 def main():
@@ -121,37 +122,7 @@ def main():
         resnet_benchmark = Resnet18Benchmark()
         train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
 
-
-    final_csv = pd.read_csv(paths["dataset"] + "patches_df.csv")
-    predictions = []
-    target = []
-
-    # site = "Nestor Macias RGB"
-    # final_csv = final_csv[final_csv.site == site]
-    nm = pd.read_csv('Nestor Macias RGB.csv')
-    la = pd.read_csv('Leonor Aspiazu RGB.csv')
-    cva = pd.read_csv('Carlos Vera Arteaga RGB.csv')
-    cvg = pd.read_csv('Carlos Vera Guevara RGB.csv')
-    fp = pd.read_csv('Flora Pluas RGB.csv')
-    mm = pd.read_csv('Manuel Macias RGB.csv')
-
-    predictions.append(nm['preds'].values.tolist())
-    predictions.append(la['preds'].values.tolist())
-    predictions.append(cva['preds'].values.tolist())
-    predictions.append(cvg['preds'].values.tolist())
-    predictions.append(fp['preds'].values.tolist())
-    predictions.append(mm['preds'].values.tolist())
-    predictions = [item for sublist in predictions for item in sublist]
-    target.append(nm['true_value'].values.tolist())
-    target.append(la['true_value'].values.tolist())
-    target.append(cva['true_value'].values.tolist())
-    target.append(cvg['true_value'].values.tolist())
-    target.append(fp['true_value'].values.tolist())
-    target.append(mm['true_value'].values.tolist())
-    target = [item for sublist in target for item in sublist]
-
-    final_csv['predictions'] = predictions
-    final_csv['true_value'] = target
-    final_csv.to_csv('predictions.csv')
+    if not benchmark_dataset:
+        report_results(paths["dataset"])
 
 main()
