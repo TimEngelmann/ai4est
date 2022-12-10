@@ -1,73 +1,170 @@
 import numpy as np
 import cv2
 import pandas as pd
-import matplotlib.pyplot as plt
-import torch
 from IPython import embed
 import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from parts.data_split import create_split_dataframe
+from data_split import create_split_dataframe
+import ot
+
+
+def greedy_matching(otplan):
+    """
+    Greedily chooses best match and removes the 
+    corresponding source and target from the optimal 
+    transport plan to get a one-to-one matching.
+    """
+
+    tmp_plan = otplan.copy()
+    matches = np.empty(tmp_plan.shape[0], dtype=int)
+
+    while tmp_plan.sum() != 0:
+        i, j = np.unravel_index(tmp_plan.argmax(), tmp_plan.shape) #finding best match
+        matches[i] = j
+        
+        #removing match from optimal transport plan
+        tmp_plan[i, :] = 0.
+        tmp_plan[:, j] = 0.
+
+    return matches
+
+
+def matching_site(bboxes_site, field_data_site, method):
+    """
+    Matching bounding boxes to field data points using 
+    optimal transport and a greedy matching strategy.
+    The optimal transport provideds the most likely
+    matches for each bounding box and the greedy matching
+    is used to get a one-to-one mapping between the two.
+    Inputs:
+        bboxes : dataframe
+            stores the center point of each bounding box
+            for a particular site
+        field_data: dataframe
+            contains the field data points with pixel
+            coordinates for a particular site
+        method : string
+            which method to use for the optimal transport
+            plan computation. Currently only the sinkhorn
+            and emd algorithms are supported.
+    Returns:
+        dataframe : bboxes dataframe with additional column
+            containing the indices of the matched field
+            data points for a single site
+    """
+    idxs = field_data_site.index
+
+    xbb = bboxes_site[["Xcenter", "Ycenter"]].values
+    xf = field_data_site[["X", "Y"]].values
+
+    normalizer = np.max(xbb, axis=0)
+    M_norm = ot.dist(xbb / normalizer, xf / normalizer)
+
+    a, b = np.ones((xbb.shape[0],)) / xbb.shape[0], np.ones((xf.shape[0],)) / xf.shape[0]  # uniform distribution on samples
+
+    if method == "sinkhorn":
+        otplan = ot.sinkhorn(a, b, M_norm, reg=0.1, numItermax=100000)
+    elif method == "emd":
+        otplan = ot.emd(a, b, M_norm, numItermax=1e5)
+    else:
+        raise NotImplementedError(f"Matching method {method} is not implemented")
+    
+    matches = greedy_matching(otplan)
+    bboxes_site["matches"] = idxs[matches]
+
+    return bboxes_site    
+
+
+def matching(bboxes, field_data, method="emd"):
+    """
+    Matching bounding boxes to field data points using 
+    optimal transport and a greedy matching strategy.
+    The optimal transport provideds the most likely
+    matches for each bounding box and the greedy matching
+    is used to get a one-to-one mapping between the two.
+    Inputs:
+        bboxes : dataframe
+            stores the center point of each bounding box
+            for all sites
+        field_data: dataframe
+            contains the field data points with pixel
+            coordinates for all sites
+        method : string
+            which method to use for the optimal transport
+            plan computation. Currently only the sinkhorn
+            and emd algorithms are supported, the default
+            is sinkhorn.
+    Returns:
+        dataframe : bboxes dataframe with additional column
+            containing the indices of the matched field
+            data points and their correspondign carbon
+            values
+    """
+    sites = field_data.site.unique()
+
+    matched_df = pd.DataFrame([])
+    for site in sites:
+        bboxes_site = bboxes[bboxes.site == site].copy()
+        field_data_site = field_data[field_data.site == site]
+        df_site = matching_site(bboxes_site, field_data_site, method)
+        matched_df = pd.concat([matched_df, df_site])
+
+    #using matching to determine carbon
+    matched_df["carbon"] = field_data.iloc[matched_df.matches].carbon
+
+    return matched_df
 
 def create_benchmark_dataset(paths):
-    final_df= pd.read_csv(paths["reforestree"]+"mapping/final_dataset.csv")
-    my_df= final_df[['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'AGB', 'carbon']]
-    sites= np.unique(final_df["img_name"])
+    columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax']
+    tree_crowns = pd.read_csv(paths["reforestree"] + "mapping/final_dataset.csv", usecols=columns)
+    tree_crowns.rename(columns={"img_name": "site"}, inplace=True)
 
+    field_data = pd.read_csv(paths["reforestree"] + "field_data.csv")
+
+    sites = field_data.site.unique()
+
+    #Computing center points of bboxes
+    tree_crowns["Xcenter"] = (tree_crowns.Xmin + tree_crowns.Xmax) / 2
+    tree_crowns["Ycenter"] = (tree_crowns.Ymin + tree_crowns.Ymax) / 2
+
+    
     # Creating the tree crown images for all bounding boxes
-    logging.info("Creating unfiltered tree crown dataframe")
-    tree_crowns = pd.DataFrame([] ,columns=["tree_img", "coord", "site", "carbon"])
-
+    tree_images = np.empty(len(tree_crowns), dtype=object)
     for site in sites:
-        df_site= my_df[my_df['img_name']==site]
-        df_site= df_site.reset_index(drop=True)
-        image_site= cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
-
-        for i in range(len(df_site)):
-            tree_coord= np.array(df_site.iloc[i][['Xmin', 'Ymin', 'Xmax', 'Ymax']]).astype(int)
-            carbon= df_site.iloc[i]['carbon'].item()
-            tree_img= image_site[tree_coord[1]:tree_coord[3], tree_coord[0]:tree_coord[2], :]
-            new_df=pd.DataFrame([[tree_img, tree_coord, site, carbon]], columns=tree_crowns.columns)
-            tree_crowns=pd.concat([tree_crowns, new_df], ignore_index=True)
+        image_site = cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
+        for i in tree_crowns[tree_crowns.site == site].index:
+            xmin, xmax = tree_crowns.loc[i, ["Xmin", "Xmax"]].astype(int)
+            ymin, ymax = tree_crowns.loc[i, ["Ymin", "Ymax"]].astype(int)
+            tree_images[i] = image_site[ymin:ymax, xmin:xmax, :]
+    
+    tree_crowns["tree_img"] = tree_images
 
     # Filtering the ones out of the sites boundaries
     logging.info("Filtering out of boundary tree crown bounding boxes")
-    white_percentage= np.zeros(len(tree_crowns))
-    for i in range(len(tree_crowns)):
-        tree_img= tree_crowns.iloc[i]["tree_img"]
-        surface= tree_img.shape[0]*tree_img.shape[1]
-        if surface>0:
-            white_percentage[i]= np.sum(np.all(tree_img==0, axis=2))/surface
-        elif surface==0:
-            white_percentage[i]=1
+    white_calculator = lambda img : np.mean((img == 0.0).all(axis=2))
+    white_percentage = tree_crowns["tree_img"].apply(white_calculator)
 
-    white_threshold= 0.8
-    tree_crowns_filtered= tree_crowns.iloc[white_percentage<white_threshold]
-    tree_crowns_filtered= tree_crowns_filtered.reset_index(drop=True)
+    white_threshold = 0.8
+    tree_crowns_filtered = tree_crowns.loc[white_percentage<white_threshold]
+    tree_crowns_filtered = tree_crowns_filtered.reset_index(drop=True)
     logging.info(f"Only {len(tree_crowns_filtered)}/{len(tree_crowns)} of the bounding boxes were inside the site boundaries")
 
+    #Adding carbon values from matched field data
+    matched_df = matching(tree_crowns_filtered, field_data)
+
     # Padding/Cropping the images so that they are all of size 800x800 (as in the paper)
-    transform= Compose([ToTensor(), CenterCrop(800)])
-    tree_crowns_final=pd.DataFrame([], columns=["tree_img", "site", "carbon"])
+    transform = Compose([ToTensor(), CenterCrop(800)])
+    matched_df["tree_img"].apply(transform)
 
-    for i in range(len(tree_crowns_filtered)):
-        tree_img= tree_crowns_filtered.iloc[i]["tree_img"]
-        transformed_img= transform(tree_img)
-        site = tree_crowns_filtered["site"][i]
-        carbon= tree_crowns_filtered["carbon"][i]
-
-        new_df=pd.DataFrame([[transformed_img, site, carbon]], columns=tree_crowns_final.columns)
-        tree_crowns_final=pd.concat([tree_crowns_final, new_df], ignore_index=True)
-
-    assert(len(tree_crowns_final)== len(tree_crowns_filtered))
-    return tree_crowns_final
+    return matched_df
 
 # TreeCrown torch Dataset
 class TreeCrown(Dataset):
     def __init__(self, df, transform=None):
         self.df = df
-        self.transform= transform
+        self.transform = transform
 
     def __len__(self):
         return len(self.df)
@@ -111,3 +208,11 @@ def train_val_test_dataloader_benchmark(data: pd.DataFrame, splits, batch_size, 
     return train_loader, val_loader, test_loader
 
 
+if __name__ == "__main__":
+    paths = {
+        "reforestree" : "/Users/jan/ai4good/data/reforestree/",
+        "dataset" : "/Users/jan/ai4good/data/dataset/"
+    }
+    df = create_benchmark_dataset(paths)
+
+    df.to_csv("matching.csv", columns=["Xcenter", "Ycenter","matches"])
