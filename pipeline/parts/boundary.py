@@ -69,3 +69,36 @@ def create_boundary(site:str, path_to_data:str, shape="convex_hull"):
         boundary = get_wwf_boundary(site, path_to_data)
 
     return boundary
+
+def main(path):
+    "Creates boundaries and saves them to shape file"
+
+    fd = pd.read_csv(path + "field_data.csv")
+    sites = fd.site.unique()
+
+    ch = []
+    wwf = []
+    alpha = []
+
+    for site  in sites:
+        ch.append(create_boundary(site, path, shape="convex_hull").item())
+        wwf.append(create_boundary(site, path, shape="wwf").item())
+        alpha.append(create_boundary(site, path, shape="alpha").item())
+
+    ch = gpd.GeoDataFrame({"site": sites}, geometry=ch)
+    wwf = gpd.GeoDataFrame({"site": sites}, geometry=wwf)
+    alpha = gpd.GeoDataFrame({"site": sites}, geometry=alpha)
+
+    return ch, wwf, alpha
+
+
+
+
+if __name__ == "__main__":
+    path = input("Path to reforestree \n >")
+    ch, wwf, alpha = main(path)
+
+    out_path = input("Output path \n >")
+    ch.to_file(out_path + "convex_boundary.shp")
+    wwf.to_file(out_path + "provided_boundary.shp")
+    alpha.to_file(out_path + "alphashape_boundary.shp")
