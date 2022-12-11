@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import logging
-import rasterio
 from parts.patches import pad
 from parts.boundary import create_boundary
 from parts.estimate_carbon import compute_carbon_distribution
@@ -9,7 +8,6 @@ from parts.helper.constants import get_gps_error
 from parts.helper.argumentparser import get_args
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader, compute_mean
-import argparse
 from PIL import Image
 import os
 import json
@@ -25,8 +23,8 @@ from parts.evaluation import report_results
 
 def main():
     #TODO: set hyperparameters
-    create_dataset= False
-    process_dataset= False
+    create_dataset= True
+    process_dataset= True
     benchmark_dataset = False
     batch_size= 64
 
