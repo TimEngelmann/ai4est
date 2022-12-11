@@ -10,6 +10,8 @@ from parts.data_split import create_split_dataframe
 import ot
 
 
+
+
 def greedy_matching(otplan):
     """
     Greedily chooses best match and removes the 
@@ -54,18 +56,20 @@ def matching_site(bboxes_site, field_data_site, method):
             containing the indices of the matched field
             data points for a single site
     """
+    
     idxs = field_data_site.index
 
-    xbb = bboxes_site[["Xcenter", "Ycenter"]].values
-    xf = field_data_site[["X", "Y"]].values
+    xbb = bboxes_site[["Ycenter", "Xcenter"]].values
+    xf = field_data_site[["Y", "X"]].values
 
     normalizer = np.max(xbb, axis=0)
+    M= ot.dist(xbb,  xf)
     M_norm = ot.dist(xbb / normalizer, xf / normalizer)
 
     a, b = np.ones((xbb.shape[0],)) / xbb.shape[0], np.ones((xf.shape[0],)) / xf.shape[0]  # uniform distribution on samples
 
     if method == "sinkhorn":
-        otplan = ot.sinkhorn(a, b, M_norm, reg=0.1, numItermax=100000)
+        otplan = ot.sinkhorn(a, b, M_norm, reg=0.1, method="sinkhorn_log", numItermax=1000000)
     elif method == "emd":
         otplan = ot.emd(a, b, M_norm, numItermax=1e5)
     else:
@@ -77,13 +81,17 @@ def matching_site(bboxes_site, field_data_site, method):
     return bboxes_site    
 
 
-def matching(bboxes, field_data, method="emd"):
+def matching(bboxes, field_data, method="sinkhorn"):
     """
     Matching bounding boxes to field data points using 
     optimal transport and a greedy matching strategy.
     The optimal transport provideds the most likely
     matches for each bounding box and the greedy matching
     is used to get a one-to-one mapping between the two.
+    For the matching we separate Musacea trees from 
+    non-Musacea trees as the bboxes are classified into
+    these categories giving us additional information
+    for the matching.
     Inputs:
         bboxes : dataframe
             stores the center point of each bounding box
@@ -106,10 +114,20 @@ def matching(bboxes, field_data, method="emd"):
 
     matched_df = pd.DataFrame([])
     for site in sites:
-        bboxes_site = bboxes[bboxes.site == site].copy()
+        bboxes_site = bboxes[bboxes.site == site]
+        bbox_is_musacea = bboxes_site["is_musacea_g"].astype(bool)
+        bboxes_site_b = bboxes_site[bbox_is_musacea].copy() #banana bboxes
+        bboxes_site_nb = bboxes_site[~bbox_is_musacea].copy() #non-banana bboxes
+
         field_data_site = field_data[field_data.site == site]
-        df_site = matching_site(bboxes_site, field_data_site, method)
-        matched_df = pd.concat([matched_df, df_site])
+        fd_is_musacea = field_data_site.group == "banana"
+        field_data_site_b = field_data_site[fd_is_musacea] #banana field data
+        field_data_site_nb = field_data_site[~fd_is_musacea] #non-banana field data
+
+        #matching banana and non banana separately
+        df_site_b = matching_site(bboxes_site_b, field_data_site_b, method)
+        df_site_nb = matching_site(bboxes_site_nb, field_data_site_nb, method)
+        matched_df = pd.concat([matched_df, df_site_b, df_site_nb])
 
     #using matching to determine carbon
     matched_df["carbon"] = field_data.iloc[matched_df.matches].carbon
@@ -117,7 +135,7 @@ def matching(bboxes, field_data, method="emd"):
     return matched_df
 
 def create_benchmark_dataset(paths):
-    columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax']
+    columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'is_musacea_g']
     tree_crowns = pd.read_csv(paths["reforestree"] + "mapping/final_dataset.csv", usecols=columns)
     tree_crowns.rename(columns={"img_name": "site"}, inplace=True)
 
@@ -215,4 +233,4 @@ if __name__ == "__main__":
     }
     df = create_benchmark_dataset(paths)
 
-    df.to_csv("matching.csv", columns=["Xcenter", "Ycenter","matches"])
+    df.to_csv("matching.csv", columns=["site", "Xcenter", "Ycenter","matches", "is_musacea_g"])
