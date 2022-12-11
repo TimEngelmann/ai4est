@@ -15,55 +15,23 @@ def create_split_dataframe(path: str, data:pd.DataFrame, splits):
             summing up to 1 for method "across_sites"
             summing up to 6 for method "by_site"
     """
-    assert((len(splits)==3) or (len(splits)==6))
-    assert((sum(splits)==1) or (sum(splits)==6) or (sum(splits)==15))
-    sites = ['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
-             'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
-             'Nestor Macias RGB']
 
     train_dataset = pd.DataFrame(data=None, columns=data.columns)
     val_dataset = pd.DataFrame(data=None, columns=data.columns)
     test_dataset = pd.DataFrame(data=None, columns=data.columns)
+    train_val_test= np.zeros(len(data))
 
-    if sum(splits)==1: #splitting across sites
-        ptrain, pval, ptest=splits
-        for i in range(len(sites)):
-            data_site = data.loc[data['site']==sites[i]]
-            train_site, test_val_site = train_test_split(data_site, train_size=ptrain)
-            val_site, test_site= train_test_split(test_val_site, train_size=pval/(pval+ptest))
-            train_dataset = pd.concat([train_dataset, train_site])
-            val_dataset = pd.concat([val_dataset, val_site])
-            test_dataset = pd.concat([test_dataset, test_site])
+    for i in range(len(data)):
+        if data["site"][i] in splits["training"]:
+            train_val_test[i]= 1
+        if data["site"][i] in splits["testing"]:
+            train_val_test[i]=2
+        if data["site"][i] in splits["validation"]:
+            train_val_test[i] = 3
 
-    if sum(splits)==6: #splitting by site
-        ntrain, nval, ntest=splits
-        assert ((ntrain == int(ntrain))&(nval == int(nval))&(nval == int(nval)))
-        ntrain, nval, ntest= int(ntrain), int(nval), int(ntest)
-        idx=np.arange(6)
-        np.random.shuffle(idx)
-        for i in idx[0:ntrain]:
-            data_site = data.loc[data['site'] == sites[i]]
-            train_dataset = pd.concat([train_dataset, data_site])
-        for i in idx[ntrain:(ntrain+nval)]:
-            data_site = data.loc[data['site'] == sites[i]]
-            val_dataset = pd.concat([val_dataset, data_site])
-        for i in idx[(ntrain+nval):6]:
-            data_site = data.loc[data['site'] == sites[i]]
-            test_dataset = pd.concat([test_dataset, data_site])
-
-    if sum(splits) == 15: #splitting fixed sites
-        train=splits[:4]
-        val=splits[-2]
-        test=splits[-1]
-        assert (len(train) == 4)
-        for i in train:
-            data_site = data.loc[data['site'] == sites[i]]
-            train_dataset = pd.concat([train_dataset, data_site])
-        data_site = data.loc[data['site'] == sites[val]]
-        val_dataset = pd.concat([val_dataset, data_site])
-        data_site = data.loc[data['site'] == sites[test]]
-        test_dataset = pd.concat([test_dataset, data_site])
-
+    train_dataset= data.loc[train_val_test==1]
+    test_dataset= data.loc[train_val_test==2]
+    val_dataset= data.loc[train_val_test==3]
 
     train_dataset = train_dataset.reset_index(drop=True)
     val_dataset = val_dataset.reset_index(drop=True)
@@ -118,9 +86,16 @@ def train_val_test_dataset(path: str, data:pd.DataFrame, splits, transform):
 
 def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size, transform=None):
     train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, data, splits, transform)
+    assert(len(train_dataset))>0
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    if len(val_dataset)>0:
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+    else:
+        val_loader= None
+    if len(test_dataset)>0:
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+    else:
+        test_loader= None
 
     return train_loader, val_loader, test_loader
 
