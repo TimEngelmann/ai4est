@@ -25,9 +25,9 @@ from parts.evaluation import report_results
 
 def main():
     #TODO: set hyperparameters
-    create_dataset= False
+    create_dataset= True
     process_dataset= False
-    benchmark_dataset = False
+    benchmark_dataset = True
     batch_size= 64
 
 
@@ -82,7 +82,7 @@ def main():
     #Training hyperparameters
     training_hyperparameters = {
         "learning_rate" : 1e-5,
-        "n_epochs" : 50,
+        "n_epochs" : 5,
         "loss_fn": nn.MSELoss(),
         "log_interval": 1,
         "device": "cpu",

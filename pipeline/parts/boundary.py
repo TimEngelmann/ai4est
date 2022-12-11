@@ -63,7 +63,7 @@ def create_boundary(site:str, path_to_data:str, shape="convex_hull"):
         boundary = gpd.GeoSeries({"geometry" : boundary})
     elif shape == "alpha_shape":
         field_data = get_field_data(site, path_to_data)
-        alpha_shape = alphashape.alphashape(field_data[['lon', 'lat']].values, 25000)
+        alpha_shape = alphashape.alphashape(field_data[['lon', 'lat']].values, 15000)
         boundary = gpd.GeoSeries({"geometry" : alpha_shape})
     else:
         boundary = get_wwf_boundary(site, path_to_data)
