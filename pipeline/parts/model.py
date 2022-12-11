@@ -65,7 +65,7 @@ class Resnet18Benchmark(nn.Module):
         out=self.activation(out)
         return out
 
-def train(model, training_hyperparameters, train_loader, val_loader, test_loader, site_name):
+def train(model, training_hyperparameters, train_loader, val_loader, site_name):
     if val_loader == None:
         logging.info("No Validation Done!")
 
@@ -121,22 +121,9 @@ def train(model, training_hyperparameters, train_loader, val_loader, test_loader
             print(val_loss)
             val_losses.append(val_loss.item())
     logging.info(f'Finished Training')
-    if val_loader != None:
-        plt.plot(epochs, train_losses)
-        plt.plot(epochs, val_losses)
-        plt.title(f'Training Results for {site_name} site')
-        plt.xlabel('Epoch(s)')
-        plt.ylabel('Loss')
-        endrange = (n_epochs // 5) + 1
-        plt.xticks(range(0, endrange * 5, 5))
-        plt.legend(['Train', 'Validation'], loc='upper left')
-        plt.savefig(f'figures/train_val_results_{site_name}.png')
-        plt.clf()
-        logging.info(f'Created Train/Val Figure')
-    logging.info(f'Testing Model')
-    test_results = test(model, test_loader, loss_fn, device)
-    # writer.close()
-    test_results.to_csv('./testing_results/{}.csv'.format(site_name))
+
+    losses = pd.DataFrame({'epoch':epochs, 'train_loss':train_losses, 'val_loss':val_losses})
+    return model, losses
 
 
 def val(model, epoch, val_dataloader, loss_fn, device):
@@ -172,7 +159,7 @@ def val(model, epoch, val_dataloader, loss_fn, device):
             val_loss += loss_fn(output, target)
             val_epoch_loss += val_loss
 
-            print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
+            # print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
             val_loss = 0
     # writer.add_scalar("Val/Epoch", val_epoch_loss, epoch)
     # writer.flush()
@@ -211,7 +198,7 @@ def test(model, test_dataloader, loss_fn, device):
             # Calculate the MSE Loss between the predictions and the ground truth values
             test_loss += loss_fn(output, target) # sum up batch loss
 
-            print('\nTest set: Batch Loss: {:.4f})\n'.format(test_loss))
+            # print('\nTest set: Batch Loss: {:.4f})\n'.format(test_loss))
             test_loss = 0
 
     for i in range((len(targets))):

@@ -6,7 +6,7 @@ import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from data_split import create_split_dataframe
+from parts.data_split import create_split_dataframe
 import ot
 
 
@@ -157,7 +157,7 @@ def create_benchmark_dataset(paths):
     # Padding/Cropping the images so that they are all of size 800x800 (as in the paper)
     transform = Compose([ToTensor(), CenterCrop(800)])
     matched_df["tree_img"].apply(transform)
-
+    matched_df.to_csv(paths["dataset"] + "benchmark_dataset.csv")
     return matched_df
 
 # TreeCrown torch Dataset

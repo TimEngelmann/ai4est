@@ -14,20 +14,20 @@ from PIL import Image
 import os
 import json
 from IPython import embed
-from parts.model import SimpleCNN, Resnet18Benchmark, train
+from parts.model import SimpleCNN, Resnet18Benchmark, train, test
 import torch
 import torch.nn as nn
 from torchvision.transforms import Normalize, Resize, Compose
 from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dataloader_benchmark
 from parts.helper.datacreation import create_data
-from parts.evaluation import report_results
+from parts.evaluation import report_results, plot_losses
 
 
 def main():
     #TODO: set hyperparameters
-    create_dataset= True
+    create_dataset= False
     process_dataset= False
-    benchmark_dataset = True
+    benchmark_dataset = False
     batch_size= 64
 
 
@@ -82,7 +82,7 @@ def main():
     #Training hyperparameters
     training_hyperparameters = {
         "learning_rate" : 1e-5,
-        "n_epochs" : 5,
+        "n_epochs" : 2,
         "loss_fn": nn.MSELoss(),
         "log_interval": 1,
         "device": "cpu",
@@ -97,15 +97,24 @@ def main():
         logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
+    # create directories
+    for directory in [
+        f'results/{hyperparameters["run_name"]}/plots/losses',
+        f'results/{hyperparameters["run_name"]}/csv/losses',
+        f'results/{hyperparameters["run_name"]}/plots/predictions',
+        f'results/{hyperparameters["run_name"]}/csv/predictions']:
+        if not os.path.exists(directory):
+                os.makedirs(directory)
+
     sites = np.array(['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
              'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
              'Nestor Macias RGB'])
-
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
     splits = {"training":[], "validation":[], "testing":[]}
     for i in range(len(sites)):
         splits["testing"] = [sites[i]]
+        splits["validation"] = [sites[i]]
         idx = np.array(list(set(np.arange(6)) - set(np.array([i])))).astype(int)
         splits["training"] = list(sites[idx])
         logging.info("Training on sites {}".format(splits["training"]))
@@ -120,9 +129,19 @@ def main():
 
         site_name = splits["testing"][0]
         resnet_benchmark = Resnet18Benchmark()
-        train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, test_loader, site_name)
+        model, losses = train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, site_name)
+        
+        logging.info(f'Saving Losses')
+        losses.to_csv(f'results/{hyperparameters["run_name"]}/csv/losses/losses_{site_name}.csv')
+        plot_losses(hyperparameters["run_name"], site_name, losses)
+
+        logging.info(f'Testing Model')
+        if test_loader is None:
+            test_loader = val_loader
+        test_results = test(model, test_loader, training_hyperparameters["loss_fn"], training_hyperparameters["device"])
+        test_results.to_csv(f'results/{hyperparameters["run_name"]}/csv/predictions/predictions_{site_name}.csv')
 
     if not benchmark_dataset:
-        report_results(paths["dataset"])
+        report_results(paths["dataset"], hyperparameters["run_name"])
 
 main()
