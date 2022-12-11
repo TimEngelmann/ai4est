@@ -131,19 +131,30 @@ def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str, benchmark_da
         std = torch.sqrt((std / count)) 
     
     else:
-        image_data_loader = DataLoader(
+        dataloader = DataLoader(
             data.tree_img.values,
-            batch_size=len(data.tree_img.values),
+            batch_size=1,
             shuffle=False,
             num_workers=0
         )
 
-        def mean_std(loader):
-            images = next(iter(loader))
-            # shape of images = [b,c,w,h]
-            mean, std = images.mean([0,2,3]), images.std([0,2,3])
-            return mean, std
+        mean = torch.zeros(3)
+        std = torch.zeros(3)
+        count = 0
+        for batch in dataloader:
+            imgs = batch[0]
+            batch_samples = imgs.size(0)
+            imgs = imgs / 256
+            mean = mean + imgs.sum((1,2))
+            count += imgs.shape[1] * imgs.shape[2]
 
-        mean, std = mean_std(image_data_loader)
+        mean = mean * 256 / count
+
+        for batch in dataloader:
+            imgs = batch[0]
+            batch_samples = imgs.size(0)
+            std = std + ((torch.moveaxis(imgs, 0, -1) - mean) ** 2).sum((0,1))
+
+        std = torch.sqrt((std / count)) 
 
     return mean, std

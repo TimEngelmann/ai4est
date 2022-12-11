@@ -23,9 +23,9 @@ from parts.evaluation import report_results, plot_losses
 
 def main():
     #TODO: set hyperparameters
-    create_dataset= True
-    process_dataset= True
-    benchmark_dataset = False
+    create_dataset= False
+    process_dataset= False
+    benchmark_dataset = True
     batch_size= 64
 
 
@@ -55,15 +55,16 @@ def main():
     if create_dataset:
         logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
+        data = data.reset_index()
     if process_dataset:
         data = process(trees.site.unique(), hyperparameters, paths)
+        data = data.reset_index()
     if benchmark_dataset:
         # benchmark_dataset
         data = create_benchmark_dataset(paths)
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
-    data = data.reset_index()
     logging.info("Dataset has %s elements", len(data))
     transform = None
 

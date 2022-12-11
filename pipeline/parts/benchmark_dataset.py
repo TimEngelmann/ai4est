@@ -63,7 +63,6 @@ def matching_site(bboxes_site, field_data_site, method):
     xf = field_data_site[["Y", "X"]].values
 
     normalizer = np.max(xbb, axis=0)
-    M= ot.dist(xbb,  xf)
     M_norm = ot.dist(xbb / normalizer, xf / normalizer)
 
     a, b = np.ones((xbb.shape[0],)) / xbb.shape[0], np.ones((xf.shape[0],)) / xf.shape[0]  # uniform distribution on samples
@@ -130,9 +129,11 @@ def matching(bboxes, field_data, method="sinkhorn"):
         matched_df = pd.concat([matched_df, df_site_b, df_site_nb])
 
     #using matching to determine carbon
-    matched_df["carbon"] = field_data.iloc[matched_df.matches].carbon
+    carbon = field_data.iloc[matched_df.matches].carbon
 
-    return matched_df
+    assert carbon.isna().sum() == 0.
+
+    return matched_df.matches, carbon
 
 def create_benchmark_dataset(paths):
     columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'is_musacea_g']
@@ -170,13 +171,19 @@ def create_benchmark_dataset(paths):
     logging.info(f"Only {len(tree_crowns_filtered)}/{len(tree_crowns)} of the bounding boxes were inside the site boundaries")
 
     #Adding carbon values from matched field data
-    matched_df = matching(tree_crowns_filtered, field_data)
+    matches, carbon = matching(tree_crowns_filtered.drop(columns="tree_img", axis=1), field_data)
+
+    tree_crowns_filtered["matches"] = matches
+    tree_crowns_filtered["carbon"] = carbon.to_numpy()
 
     # Padding/Cropping the images so that they are all of size 800x800 (as in the paper)
     transform = Compose([ToTensor(), CenterCrop(800)])
-    matched_df["tree_img"].apply(transform)
-    matched_df.to_csv(paths["dataset"] + "benchmark_dataset.csv")
-    return matched_df
+    tree_crowns_filtered["tree_img"] = tree_crowns_filtered["tree_img"].apply(transform)
+    tree_crowns_filtered.to_csv(paths["dataset"] + "benchmark_dataset.csv")
+
+    assert tree_crowns_filtered.carbon.isna().sum() == 0
+
+    return tree_crowns_filtered
 
 # TreeCrown torch Dataset
 class TreeCrown(Dataset):
@@ -203,7 +210,11 @@ class TreeCrown(Dataset):
         return image, carbon, site, 0
 
 def train_val_test_dataset_benchmark(data:pd.DataFrame, splits, transform=None):
+    assert data.carbon.isna().sum() == 0
+
     train, val, test= create_split_dataframe("", data, splits)
+
+    assert train.carbon.isna().sum() == 0
     train_dataset= TreeCrown(train, transform)
     val_dataset = TreeCrown(val, transform)
     test_dataset = TreeCrown(test, transform)
@@ -233,4 +244,4 @@ if __name__ == "__main__":
     }
     df = create_benchmark_dataset(paths)
 
-    df.to_csv("matching.csv", columns=["site", "Xcenter", "Ycenter","matches", "is_musacea_g"])
+    df.to_csv("matching.csv", columns=["site", "carbon", "Xcenter", "Ycenter","matches", "is_musacea_g"])
