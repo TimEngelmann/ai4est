@@ -16,17 +16,11 @@ def plot_losses(run_name, site, losses):
     plt.savefig(f'results/{run_name}/plots/losses/train_val_results_{site}.png')
 
 def create_predictions_csv(dataset_path, run_name):
-    # DO NOT CHANGE THE ORDER. Thanks <3
-    sites = ['Nestor Macias RGB',
-             'Leonor Aspiazu RGB',
-             'Carlos Vera Arteaga RGB',
-             'Carlos Vera Guevara RGB',
-             'Flora Pluas RGB',
-             'Manuel Macias RGB']
-
     final_csv = pd.read_csv(dataset_path + "patches_df.csv")
     predictions = []
     target = []
+
+    sites = final_csv.site.unique()
 
     csv_path = f'results/{run_name}/csv/'
     for site in sites:
