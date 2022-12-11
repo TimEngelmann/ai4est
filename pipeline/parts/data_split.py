@@ -89,11 +89,11 @@ def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size,
     assert(len(train_dataset))>0
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     if len(val_dataset)>0:
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     else:
         val_loader= None
     if len(test_dataset)>0:
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     else:
         test_loader= None
 
