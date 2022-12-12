@@ -93,6 +93,7 @@ def train(model, training_hyperparameters, train_loader, val_loader, site_name):
     epoch_loss = 0
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
+        epoch_los = 0.0
         for batch_id, (img, carbon, _, _) in enumerate(train_loader, 0):
             # zero the parameter gradients
             img, carbon= img.to(torch.float32), carbon.to(torch.float32)
@@ -110,6 +111,8 @@ def train(model, training_hyperparameters, train_loader, val_loader, site_name):
             if batch_id % log_interval == log_interval-1:
                 print(f'[Epoch {epoch + 1}, Batch {batch_id + 1:5d}] loss: {running_loss / log_interval:.3f}')
                 running_loss = 0.0
+            
+        logging.info(f"Epoch {epoch} : Loss {epoch_loss}")
         # val_results = pd.concat([val_results, results], axis=1)
         # writer.add_scalar("Train/Epoch", epoch_loss, epoch)
         train_losses.append(epoch_loss)
@@ -152,12 +155,13 @@ def val(model, epoch, val_dataloader, loss_fn, device):
             # Get the model predictions for the current batch
             output = model.forward(data)
             output = output.squeeze()
-            targets.append(target.to("cpu"))
-            predictions.append(output.to("cpu"))
 
             # Calculate the MSE Loss between the predictions and the ground truth values
             val_loss += loss_fn(output, target)
             val_epoch_loss += val_loss
+
+            targets.append(target.to("cpu"))
+            predictions.append(output.to("cpu"))
 
             # print('\nValidation set: Batch Loss: {:.4f})\n'.format(val_loss))
             val_loss = 0
