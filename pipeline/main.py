@@ -22,13 +22,6 @@ from parts.evaluation import report_results, plot_losses
 
 
 def main():
-    #TODO: set hyperparameters
-    create_dataset= False
-    process_dataset= False
-    benchmark_dataset = True
-    batch_size= 64
-
-
     path_to_main = os.path.dirname(__file__) 
     logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
@@ -52,14 +45,12 @@ def main():
     trees = pd.read_csv(paths["reforestree"] + "/field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
-    if create_dataset:
+    if hyperparameters["create_dataset"]:
         logging.info("Creating data")
         create_data(paths, hyperparameters, trees)
-        data = data.reset_index()
-    if process_dataset:
+    if hyperparameters["process_dataset"]:
         data = process(trees.site.unique(), hyperparameters, paths)
-        data = data.reset_index()
-    if benchmark_dataset:
+    if hyperparameters["benchmark_dataset"]:
         # benchmark_dataset
         data = create_benchmark_dataset(paths)
     else:
@@ -71,7 +62,7 @@ def main():
     #Computing mean and std of pixels and normalizing accordingly
     if hyperparameters["normalize"]:
         logging.info("Normalizing data")
-        mean, std = compute_mean(hyperparameters, data, paths["dataset"], benchmark_dataset)
+        mean, std = compute_mean(hyperparameters, data, paths["dataset"], hyperparameters["benchmark_dataset"])
         logging.info("Computed - Mean: {} and Std: {}".format(mean, std))
         transform = Compose([
             Normalize(mean, std),
@@ -81,12 +72,12 @@ def main():
     #Training hyperparameters
     training_hyperparameters = {
         "learning_rate" : 1e-5,
-        "n_epochs" : 1,
+        "n_epochs" : 50,
         "loss_fn": nn.MSELoss(),
-        "log_interval": 1,
+        "log_interval": 20,
         "device": "cpu",
-        #TODO: Add mode options when it come to optimizer expect the Adam and AMSGrad
-        "optimizer": "amsgrad"
+        "optimizer": "amsgrad",
+        "batch_size": 64
     }
 
     if torch.cuda.is_available():
@@ -104,27 +95,25 @@ def main():
         f'results/{hyperparameters["run_name"]}/csv/predictions']:
         if not os.path.exists(directory):
                 os.makedirs(directory)
-
-    sites = np.array(['Carlos Vera Arteaga RGB', 'Carlos Vera Guevara RGB',
-             'Flora Pluas RGB', 'Leonor Aspiazu RGB', 'Manuel Macias RGB',
-             'Nestor Macias RGB'])
+    
+    sites = data.site.unique()
 
     # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
     splits = {"training":[], "validation":[], "testing":[]}
     for i in range(len(sites)):
         splits["testing"] = [sites[i]]
         splits["validation"] = [sites[i]]
-        idx = np.array(list(set(np.arange(6)) - set(np.array([i])))).astype(int)
-        splits["training"] = list(sites[idx])
+        splits["training"] = list(np.delete(sites, i))
         logging.info("Training on sites {}".format(splits["training"]))
         logging.info("Validating on site number {}".format(splits["validation"]))
         logging.info("Testing on site number {}".format(splits["testing"]))
-        if benchmark_dataset:
+       
+        if hyperparameters["benchmark_dataset"]:
             train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(data, splits=splits,
-                                                                                        batch_size=batch_size, transform=transform)
+                                                                                        batch_size=training_hyperparameters["batch_size"], transform=transform)
         else:
             train_loader, val_loader, test_loader = train_val_test_dataloader(paths["dataset"], data, splits=splits,
-                                                                            batch_size=batch_size, transform=transform)
+                                                                            batch_size=training_hyperparameters["batch_size"], transform=transform)
 
         site_name = splits["testing"][0]
         resnet_benchmark = Resnet18Benchmark()
@@ -140,7 +129,7 @@ def main():
         test_results = test(model, test_loader, training_hyperparameters["loss_fn"], training_hyperparameters["device"])
         test_results.to_csv(f'results/{hyperparameters["run_name"]}/csv/predictions/predictions_{site_name}.csv')
 
-    if not benchmark_dataset:
+    if not hyperparameters["benchmark_dataset"]:
         report_results(paths["dataset"], hyperparameters["run_name"])
 
 main()
