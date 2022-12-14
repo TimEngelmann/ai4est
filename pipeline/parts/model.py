@@ -90,7 +90,6 @@ def train(model, training_hyperparameters, train_loader, val_loader, site_name):
     elif training_hyperparameters["optimizer"]=="adam":
         optimizer= Adam(model.parameters(), lr=learning_rate, amsgrad=False)
 
-    epoch_loss = 0
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
         epoch_los = 0.0
