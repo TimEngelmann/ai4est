@@ -72,7 +72,7 @@ def main():
     #Training hyperparameters
     training_hyperparameters = {
         "learning_rate" : 1e-5,
-        "n_epochs" : 50,
+        "n_epochs" : 30,
         "loss_fn": nn.MSELoss(),
         "log_interval": 20,
         "device": "cpu",
