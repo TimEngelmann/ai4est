@@ -1,5 +1,6 @@
 # AI4good_re4estree
 
+Automating the estimation of carbon stock for forestry sites is an important yet challenging task due to the inherent diversity of the problem. Recently, the advancements in machine learning algorithms, and especially deep learning techniques, gave rise to previously unexplored solutions. However, in order to tackle this problem using deep learning, it is necessary to combine efforts and collaborate. With that aim in mind, the benchmark forestry dataset ReforesTree was created using a collection of diligently hand collected measurements and drone images. In the current work, we further explore ReforesTree and strive to bring light to its shortcomings and limitations. We propose a collection of approaches for estimating carbon stock from drone images, while tackling the GPS noise, matching discrepancies and outlying samples found in the original ReforesTree dataset.
 
 ## Different implemented runs
 
