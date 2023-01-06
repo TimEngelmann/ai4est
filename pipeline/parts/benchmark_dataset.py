@@ -1,12 +1,11 @@
 import numpy as np
 import cv2
 import pandas as pd
-from IPython import embed
 import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from parts.data_split import create_split_dataframe
+from data_split import create_split_dataframe
 import ot
 
 
@@ -17,6 +16,15 @@ def greedy_matching(otplan):
     Greedily chooses best match and removes the 
     corresponding source and target from the optimal 
     transport plan to get a one-to-one matching.
+    Inputs:
+        otplan : array-like of size n x m
+            matrix containing the optimal transport plan
+            with entries the probability of matching
+            the corresponding elements
+    Returns:
+        array-like of length n : matching elements
+            of the distribution of size n to the 
+            distribution of size m
     """
 
     tmp_plan = otplan.copy()
@@ -136,6 +144,10 @@ def matching(bboxes, field_data, method="sinkhorn"):
     return matched_df.matches, carbon
 
 def create_benchmark_dataset(paths):
+    """
+    Assembles tree crown images and labels to create the final dataset for 
+    the benchmark run. 
+    """
     columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'is_musacea_g']
     tree_crowns = pd.read_csv(paths["reforestree"] + "mapping/final_dataset.csv", usecols=columns)
     tree_crowns.rename(columns={"img_name": "site"}, inplace=True)
@@ -166,7 +178,7 @@ def create_benchmark_dataset(paths):
     white_percentage = tree_crowns["tree_img"].apply(white_calculator)
 
     white_threshold = 0.8
-    tree_crowns_filtered = tree_crowns.loc[white_percentage<white_threshold]
+    tree_crowns_filtered = tree_crowns.loc[white_percentage< (white_threshold)]
     tree_crowns_filtered = tree_crowns_filtered.reset_index(drop=True)
     logging.info(f"Only {len(tree_crowns_filtered)}/{len(tree_crowns)} of the bounding boxes were inside the site boundaries")
 
@@ -209,12 +221,13 @@ class TreeCrown(Dataset):
 
         return image, carbon, site, 0
 
-def train_val_test_dataset_benchmark(data:pd.DataFrame, splits, transform=None):
-    assert data.carbon.isna().sum() == 0
+def train_val_test_dataset_benchmark(data, splits, transform=None):
+    """
+    Creates the datasets for training, validating and testing.
+    """
 
     train, val, test= create_split_dataframe("", data, splits)
 
-    assert train.carbon.isna().sum() == 0
     train_dataset= TreeCrown(train, transform)
     val_dataset = TreeCrown(val, transform)
     test_dataset = TreeCrown(test, transform)
@@ -222,9 +235,14 @@ def train_val_test_dataset_benchmark(data:pd.DataFrame, splits, transform=None):
     return train_dataset, val_dataset, test_dataset
 
 def train_val_test_dataloader_benchmark(data: pd.DataFrame, splits, batch_size, transform=None):
+    """
+    Creates the dataloaders for training, validating and testing.
+    """
     train_dataset, val_dataset, test_dataset= train_val_test_dataset_benchmark(data, splits, transform)
+    
     assert(len(train_dataset))>0
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    
     if len(val_dataset)>0:
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     else:
@@ -244,4 +262,4 @@ if __name__ == "__main__":
     }
     df = create_benchmark_dataset(paths)
 
-    df.to_csv("matching.csv", columns=["site", "carbon", "Xcenter", "Ycenter","matches", "is_musacea_g"])
+    df.to_csv("matching.csv", columns=["site", "carbon", "Xcenter", "Ycenter","matches", "Xmin", "Ymin", "Xmax", "Ymax", "is_musacea_g"])
