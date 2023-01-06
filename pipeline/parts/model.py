@@ -92,7 +92,7 @@ def train(model, training_hyperparameters, train_loader, val_loader, site_name):
 
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         running_loss = 0.0
-        epoch_los = 0.0
+        epoch_loss = 0.0
         for batch_id, (img, carbon, _, _) in enumerate(train_loader, 0):
             # zero the parameter gradients
             img, carbon= img.to(torch.float32), carbon.to(torch.float32)
