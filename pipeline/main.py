@@ -26,7 +26,7 @@ def main():
     logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
-    with open(f"{path_to_main}/config.json", "r") as cfg:
+    with open(f"{path_to_main}/configs/benchmark.json", "r") as cfg:
         hyperparameters = json.load(cfg)
 
     #Setting paths to local scratch when running on cluster
