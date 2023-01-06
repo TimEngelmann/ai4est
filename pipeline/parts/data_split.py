@@ -8,12 +8,9 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 def create_split_dataframe(path: str, data:pd.DataFrame, splits):
+
     """
-    path: to the images
-    data: contains file locations, labels and additional info
-    splits: [train, val, test],
-            summing up to 1 for method "across_sites"
-            summing up to 6 for method "by_site"
+    Creating a dataframe and splitting it into training, , validating and testing
     """
 
     train_dataset = pd.DataFrame(data=None, columns=data.columns)
@@ -40,15 +37,9 @@ def create_split_dataframe(path: str, data:pd.DataFrame, splits):
     return train_dataset, val_dataset, test_dataset
 
 class PatchesDataSet(Dataset):
-    def __init__(self, path, df, transform=None):
-        """
-        Args:
-            path (string): Path to the directory with the site images
-            transform (callable, optional): Optional transform to be applied
-                on a sample.
-        """
-        self.path = path
-        # "/Users/victoriabarenne/Documents/ai4good2/dataset/"
+    def __init__(self, path_to_dataset, df, transform=None):
+
+        self.path = path_to_dataset
         self.df = df
         self.transform= transform
 
@@ -77,14 +68,19 @@ class PatchesDataSet(Dataset):
 
 
 def train_val_test_dataset(path: str, data:pd.DataFrame, splits, transform):
+    """
+    Creates training, validating and testing datasets
+    """
     train, val, test= create_split_dataframe(path, data, splits)
     train_dataset= PatchesDataSet(path, train, transform)
     val_dataset = PatchesDataSet(path, val, transform)
     test_dataset = PatchesDataSet(path, test, transform)
-
     return train_dataset, val_dataset, test_dataset
 
 def train_val_test_dataloader(path: str, data: pd.DataFrame, splits, batch_size, transform=None):
+    """
+    Creates training, validating and testing dataloaders
+    """
     train_dataset, val_dataset, test_dataset= train_val_test_dataset(path, data, splits, transform)
     assert(len(train_dataset))>0
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)

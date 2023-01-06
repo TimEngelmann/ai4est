@@ -5,10 +5,8 @@ import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from data_split import create_split_dataframe
+from parts.data_split import create_split_dataframe
 import ot
-
-
 
 
 def greedy_matching(otplan):

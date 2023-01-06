@@ -2,20 +2,10 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import logging
-import torch.nn.functional as F
-from torchvision.models import resnet18
-import torchvision
-# from IPython import embed
-import torch.optim as optim
-# from labml_nn.optimizers.amsgrad import AMSGrad
-import matplotlib.pyplot as plt
 import torchvision.models as models
 from torch.optim import Adam
 import datetime
 
-
-# writer = SummaryWriter()
-# log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
 class SimpleCNN(nn.Module):
@@ -25,15 +15,15 @@ class SimpleCNN(nn.Module):
         self.n_channels=n_channels
 
         self.conv_layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=self.n_channels, out_channels=16, kernel_size=5), #16x24x24 OR 16x(img_dimension-4)*2
+            nn.Conv2d(in_channels=self.n_channels, out_channels=16, kernel_size=5),
             nn.ReLU(),
-            nn.MaxPool2d(2, 2) #16x12x12 OR 16x(img_dimension/2-2)*2
+            nn.MaxPool2d(2, 2)
         )
 
         self.conv_layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5), #32x8x8 OR 32x(img_dimension/2-6)*2
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5),
             nn.ReLU(),
-            nn.MaxPool2d(2, 2) #32x4x4 OR 32x(img_dimension/4-3)*2
+            nn.MaxPool2d(2, 2)
         )
 
 
@@ -66,6 +56,9 @@ class Resnet18Benchmark(nn.Module):
         return out
 
 def train(model, training_hyperparameters, train_loader, val_loader, site_name):
+    '''
+    Trains a pytorch network and reports the training losses
+    '''
     if val_loader == None:
         logging.info("No Validation Done!")
 

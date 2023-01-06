@@ -1,18 +1,11 @@
 import pandas as pd
 import numpy as np
 import logging
-from parts.patches import pad
-from parts.boundary import create_boundary
-from parts.estimate_carbon import compute_carbon_distribution
-from parts.helper.constants import get_gps_error
-from parts.helper.argumentparser import get_args
 from parts.processing import process
 from parts.data_split import train_val_test_dataloader, compute_mean
-from PIL import Image
 import os
 import json
-from IPython import embed
-from parts.model import SimpleCNN, Resnet18Benchmark, train, test
+from parts.model import Resnet18Benchmark, train, test
 import torch
 import torch.nn as nn
 from torchvision.transforms import Normalize, Resize, Compose
@@ -20,12 +13,12 @@ from parts.benchmark_dataset import create_benchmark_dataset, train_val_test_dat
 from parts.helper.datacreation import create_data
 from parts.evaluation import report_results, plot_losses
 
-
 def main():
     path_to_main = os.path.dirname(__file__) 
     logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
             filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
+    #TODO: Change to the right config file for the right run
     with open(f"{path_to_main}/configs/benchmark.json", "r") as cfg:
         hyperparameters = json.load(cfg)
 
@@ -87,7 +80,7 @@ def main():
         logging.info("Using mps")
         training_hyperparameters["device"]="mps"
 
-    # create directories
+    # Creating directories to save the run results
     for directory in [
         f'results/{hyperparameters["run_name"]}/plots/losses',
         f'results/{hyperparameters["run_name"]}/csv/losses',
@@ -98,8 +91,9 @@ def main():
     
     sites = data.site.unique()
 
-    # Training a Resnet18 model (patch size needs to be 224 for now as the transforms are not working)
+    # Training a Resnet18 model
     splits = {"training":[], "validation":[], "testing":[]}
+    # Splitting the data into training and testing
     for i in range(len(sites)):
         splits["testing"] = [sites[i]]
         splits["validation"] = [sites[i]]
@@ -118,7 +112,8 @@ def main():
         site_name = splits["testing"][0]
         resnet_benchmark = Resnet18Benchmark()
         model, losses = train(resnet_benchmark, training_hyperparameters, train_loader, val_loader, site_name)
-        
+
+        # Plotting training and testing losses
         logging.info(f'Saving Losses')
         losses.to_csv(f'results/{hyperparameters["run_name"]}/csv/losses/losses_{site_name}.csv')
         plot_losses(hyperparameters["run_name"], site_name, losses)
