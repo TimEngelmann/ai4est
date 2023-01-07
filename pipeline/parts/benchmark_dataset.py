@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+from matplotlib.pyplot import imread
 import pandas as pd
 import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
@@ -162,7 +162,7 @@ def create_benchmark_dataset(paths):
     # Creating the tree crown images for all bounding boxes
     tree_images = np.empty(len(tree_crowns), dtype=object)
     for site in sites:
-        image_site = cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
+        image_site = imread(paths["dataset"] + "sites/" + f"{site}_image.png")
         for i in tree_crowns[tree_crowns.site == site].index:
             xmin, xmax = tree_crowns.loc[i, ["Xmin", "Xmax"]].astype(int)
             ymin, ymax = tree_crowns.loc[i, ["Ymin", "Ymax"]].astype(int)
