@@ -38,20 +38,20 @@ If the code shall be run on the cluster the necessary steps differ slightly
   
 ## Results
 
-For every experimental run a set of results is produced that can be found inside the results folder and can be broken down into as presented below:
+For every experimental run a set of results is produced that can be found inside the results folder and can be broken down into the parts presented below. For each one of the files found in the results folder, a constant convention is followed. The name of the file indicated the site used for testing the model when the later was trained on the other 5 sites of the dataset.
 
   1. The csv folder contains the following:
       
-      - The losses folder contains six csv files (one for each site) that store the loss progression observed when a model is trained on 5 sites and tested on the left out site, which shares the same name with the csv file. The contents of the csv file consist of three columns, one for the epoch in which the losses were documented, and two for the losses observed. 
+      - The losses folder contains six csv files (one for each site) that store the loss progression observed during training. The contents of the csv file consist of three columns, one for the epoch in which the losses were documented, and two for the losses observed. 
     
       - The metrics.csv file contains information relevant to the training and testing of the models for every run. Its information include the testing site for the respective run, the patch size used, the degreed of rotations deployed, the number of patches created, the total carbon that is present in all the patches of the testing site, along with the respective value predicted by the model, the mean carbon value for the testing site, along with the respective mean prediction given by the model, and finally, the MSE, RMSE and R squared metrics for the run.
     
-      - The predictions folder contains six csv files (one for each site) that store the results produced when a model is trained on 5 sites and tested on the left out site, which shares the same name with the csv file. The contents of the csv file consist of two columns, one for the ground truth labels and the other one for the prediction made by the model.
+      - The predictions folder contains six csv files (one for each site) that store the testing results. The contents of the csv file consist of two columns, one for the ground truth labels and the other one for the prediction made by the model.
     
-      - The results.csv file has 9 columns. The first seven columns contain information relevant to the creation of the respective patch (e.g. carbon, path, site, degrees of rotation, size, patch index inside of the site). The last two columns constitute a summary of the six csvs that can be found in the predictions folder previously discussed.
+      - The results.csv file has 9 columns. The first seven columns contain information relevant to the creation of the respective patch (e.g. carbon, path, site, degrees of rotation, size, patch index inside of the site). The last two columns constitute a summary of the six csv files that can be found in the predictions folder discussed above.
     
   2. The plots folder contains the following:
     
-      - The losses folder 6 pdf files and 6 png files. The pdf files present the plotting of the loss per epoch for each run. The files share the same name with the site that is being tested for each particular run. The png files present the exact same plotting while also giving a comparison between the current run and all the previous ones.
+      - The losses folder contains 6 pdf files and 6 png files. The pdf files present the plotting of the loss per epoch for each run. The png files present the exact same plotting while also giving a comparison between the current run and all the previous ones.
     
-      - The predictions folder contains three different types of pdf files, 6 for each type. First, predictions_*site name* RGB.pdf gives a visual representation of the ground truth carbon distribution as well as the predicted one, when the model is tested on the respective site. Second, predictions_hist_*site name* RGB.pdf contains the histograms of the target and predicted values for the model when tested on the *site name* site. Third, predictions_sorted_*site name* RGB is equivalent to predictions_*site name* RGB.pdf, but instead of plotting the results on the site images, this time the target values are sorted and compared directly to the model's predictions.
+      - The predictions folder contains three different types of pdf files, 6 for each type. First, predictions_*site name* RGB.pdf gives a visual representation of the ground truth carbon distribution as well as the one predicted by the model. Second, predictions_hist_*site name* RGB.pdf contains the histograms of the target and predicted values for the model. Third, predictions_sorted_*site name* RGB is equivalent to predictions_*site name* RGB.pdf, but instead of plotting the results on the site images, the target values are sorted and compared directly to the model's predictions.
