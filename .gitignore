@@ -1,4 +1,9 @@
-data/
+# ignore all data but hand annotations
+data/dataset
+data/reforestree
+data/trees
+data/annotations/Leonor Aspiazu RGB/other_format
+
 *.ipynb_checkpoints
 *.DS_Store
 original_code/

@@ -55,3 +55,27 @@ For every experimental run a set of results is produced that can be found inside
       - The losses folder contains 6 pdf files and 6 png files. The pdf files present the plotting of the loss per epoch for each run. The png files present the exact same plotting while also giving a comparison between the current run and all the previous ones.
     
       - The predictions folder contains three different types of pdf files, 6 for each type. First, predictions_*site name* RGB.pdf gives a visual representation of the ground truth carbon distribution as well as the one predicted by the model. Second, predictions_hist_*site name* RGB.pdf contains the histograms of the target and predicted values for the model. Third, predictions_sorted_*site name* RGB is equivalent to predictions_*site name* RGB.pdf, but instead of plotting the results on the site images, the target values are sorted and compared directly to the model's predictions.
+
+## Code Structure
+Here we want to provide an overview of the structure and most important parts of the repository.
+
+```
+.
+├── data                        
+│   ├── annotations             # Our hand annotations for one site 
+│   ├── dataset                 # Will be created when running the pipeline 
+│   └── reforestree             # Original data to be downloaded as described    
+|   └── ...             
+├── exploration                 # Jupyter notebooks for data analysis
+│   ├── plots_report.ipynb      # Notebook to create plots of run results
+│   ├── data_ground_truth.ipynb # Notebook analyzing GPS error, carbon and boundaries
+│   ├── analyse_matching.ipynb  # Notebook for initial matching analysis
+|   └── ...
+├── pipeline                    # Main code
+│   ├── configs                 # Predefined config files for experiments described in report
+│   ├── parts                   # All parts of the pipeline
+│   ├── main.py                 # Execute this file to run the pipeline
+|   └── ...
+├── results                     # Already contains csv files of our experiments
+└── ...
+```
