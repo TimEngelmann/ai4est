@@ -38,7 +38,7 @@ If the code shall be run on the cluster the necessary steps differ slightly
   
 ## Results
 
-For every experimental run a set of results is produced that can be found inside the results folder and can be broken down into the parts presented below. For each one of the files found in the results folder, a constant convention is followed. The name of the file indicated the site used for testing the model when the later was trained on the other 5 sites of the dataset.
+For every experimental run a set of results is produced that can be found inside the results folder. For each one of the files found in the results folder, a constant convention is followed. The name of the file indicates the site used for testing the model when the later was trained on the other 5 sites of the dataset. Please note that some of the files (in particular most csv files) are produced during the run of the pipeline. To have access to all of the files mentioned below (in particular the plots), it is necessary to execute the `plots_report.ipynb` notebook. Simply specify the `run_name` in the second cell of the notebook and execute it. Afterwards the content of the folder can be broken down into the parts presented below.
 
   1. The csv folder contains the following:
       
