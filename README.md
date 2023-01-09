@@ -19,10 +19,12 @@ the different runs and machines used to execute the code, the right configuratio
 Here's a rundown of the necessary steps to run the code on a local machine
 
   1. Identify the correct config file
+  2. Set `cluster` to `false`in this config file
   2. Set this config file in line 29 of `pipeline/main.py`
   2. Create a dataset directory where the processed dataset will be stored
   3. Change the path to dataset to the directory created in step 2 in the config file
-  4. Change the path to reforestree to point to the location of the reforestree dataset on you machine
+  4. Change the path to reforestree to point to the location of the reforestree dataset on you machine (so /path/to/dir/reforestree/)
+  5. Change the path to main to point to where this directory lies on your machine (so /path/to/dir/ai4est/)
   5. Activate environment
   6. Execute code from inside the `pipeline` directory by running `python3 main.py`
   
@@ -31,9 +33,10 @@ If the code shall be run on the cluster the necessary steps differ slightly
   1. Identify the correct config file
   2. Set this config file in line 29 of `pipeline/main.py`
   2. Set `cluster` to `true` in the config file chosen in step 1.
-  3. Change the paths in the `submit.sh` file in the `pipeline` directory to the
-      paths pointing to your reforestree folder and the python virtualenv created from 
-      the requirements file.
+  5. Change the path to main to point to where this directory lies on your machine (so /path/to/dir/ai4est/)
+  5. Change the path to reforestree to point to where the reforestree directory lies on the cluster (so /path/to/dir/reforestree/)
+  3. Change the paths in the `submit.sh` file in the `pipeline` directory to the paths pointing to your  python virtualenv created 
+      from the requirements file.
   4. Execute code from inside `pipeline` directory by running `sbatch < submit.sh`
   
 ## Results
