@@ -1,11 +1,19 @@
-data/
+# ignore all data but hand annotations
+data/dataset
+data/reforestree
+data/trees
+data/annotations/Leonor Aspiazu RGB/other_format
+
+#ignore results
+results
+
 *.ipynb_checkpoints
 *.DS_Store
 original_code/
 launch.json
 pipeline/config.json
 pipeline/old_config.json
-results/
+results/old_runs
 runs/
 
 #Ignore pycache
@@ -18,6 +26,7 @@ __pycache__/
 #Ignore plots
 *.pdf
 *.png
+*.jpg
 
 #Ignore notebooks in main folder
 /*ipynb
