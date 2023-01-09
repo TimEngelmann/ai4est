@@ -8,6 +8,8 @@ data/annotations/Leonor Aspiazu RGB/other_format
 results
 runs
 
+=======
+>>>>>>> 39873f366be453d3cc12b26876e8c71922873332
 *.ipynb_checkpoints
 *.DS_Store
 original_code/

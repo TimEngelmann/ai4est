@@ -175,6 +175,7 @@ def create_benchmark_dataset(hyperparameters, paths):
     #load images by site
     for site in sites:
 <<<<<<< HEAD
+<<<<<<< HEAD
        
         #creating boundary
         site_image_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
@@ -187,6 +188,9 @@ def create_benchmark_dataset(hyperparameters, paths):
         site_img = np.moveaxis(site_img, 0, -1) #moving channels to last dimension
 
         #creating tree crown images
+=======
+        image_site = imread(paths["dataset"] + "sites/" + f"{site}_image.png")
+>>>>>>> 39873f366be453d3cc12b26876e8c71922873332
 =======
         image_site = imread(paths["dataset"] + "sites/" + f"{site}_image.png")
 >>>>>>> 39873f366be453d3cc12b26876e8c71922873332
