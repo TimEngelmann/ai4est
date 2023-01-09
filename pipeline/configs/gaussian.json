@@ -6,7 +6,7 @@
     "rotations": [
         0 
     ],
-    "cluster": false,
+    "cluster": true,
     "mean": [
         0.0,
         0.0
@@ -23,8 +23,9 @@
     ],
     "carbon_threshold": 100000,
     "boundary_shape": "alpha_shape",
+    "main" : "/cluster/home/jabohl/ai4good/ai4est/",
     "dataset" : "/Users/jan/ai4good/data/dataset/",
-    "reforestree" : "/Users/jan/ai4good/data/reforestree/",
+    "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/",
     "create_dataset" : true,
     "process_dataset" : true,
     "run_name" : "gaussian",

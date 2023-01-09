@@ -6,6 +6,7 @@ import torchvision.io
 import torch
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from parts.benchmark_dataset import TreeCrown
 
 def create_split_dataframe(path: str, data:pd.DataFrame, splits):
 
@@ -127,8 +128,9 @@ def compute_mean(hyperparameters:dict, data:pd.DataFrame, path:str, benchmark_da
         std = torch.sqrt((std / count)) 
     
     else:
+        dataset = TreeCrown(data)
         dataloader = DataLoader(
-            data.tree_img.values,
+            dataset,
             batch_size=1,
             shuffle=False,
             num_workers=0

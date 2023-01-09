@@ -1,13 +1,16 @@
 import numpy as np
-import cv2
 import pandas as pd
+from matplotlib.pyplot import imread, imsave
+import PIL.Image as Image
 import logging
 from torchvision.transforms import ToTensor, Compose, CenterCrop, Pad, Resize
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-from parts.data_split import create_split_dataframe
+from parts.boundary import create_boundary
 import ot
-
+import os
+import rasterio
+import rasterio.mask
 
 def greedy_matching(otplan):
     """
@@ -141,11 +144,14 @@ def matching(bboxes, field_data, method="sinkhorn"):
 
     return matched_df.matches, carbon
 
-def create_benchmark_dataset(paths):
+
+def create_benchmark_dataset(hyperparameters, paths):
     """
     Assembles tree crown images and labels to create the final dataset for 
     the benchmark run. 
     """
+    logging.info("Creating benchmark dataset")
+
     columns = ['img_name', 'Xmin', 'Ymin', 'Xmax', 'Ymax', 'is_musacea_g']
     tree_crowns = pd.read_csv(paths["reforestree"] + "mapping/final_dataset.csv", usecols=columns)
     tree_crowns.rename(columns={"img_name": "site"}, inplace=True)
@@ -160,35 +166,62 @@ def create_benchmark_dataset(paths):
 
     
     # Creating the tree crown images for all bounding boxes
-    tree_images = np.empty(len(tree_crowns), dtype=object)
+    logging.info("Creating tree crown images")
+    os.mkdir(paths["dataset"] + "tree_crowns/")
+    white_percentage = np.empty(len(tree_crowns), dtype=float) #holds amount of white pixels in tree crown image
+
+    tree_crowns.insert(0, "path", "") #add path column to dataframe
+   
+    #load images by site
     for site in sites:
-        image_site = cv2.imread(paths["dataset"] + "sites/" + f"{site}_image.png")
+       
+        #creating boundary
+        site_image_path = paths["reforestree"] + f"wwf_ecuador/RGB Orthomosaics/{site}.tif"
+        boundary = create_boundary(site, paths["reforestree"], shape=hyperparameters["boundary_shape"])
+
+        #masking the drone image using the boundary
+        with rasterio.open(site_image_path) as raster:
+            site_img, _ = rasterio.mask.mask(raster, boundary, crop=False)
+
+        site_img = np.moveaxis(site_img, 0, -1) #moving channels to last dimension
+
+        #creating tree crown images
         for i in tree_crowns[tree_crowns.site == site].index:
+            #getting coordinates of bounding box
             xmin, xmax = tree_crowns.loc[i, ["Xmin", "Xmax"]].astype(int)
             ymin, ymax = tree_crowns.loc[i, ["Ymin", "Ymax"]].astype(int)
-            tree_images[i] = image_site[ymin:ymax, xmin:xmax, :]
-    
-    tree_crowns["tree_img"] = tree_images
 
-    # Filtering the ones out of the sites boundaries
-    logging.info("Filtering out of boundary tree crown bounding boxes")
-    white_calculator = lambda img : np.mean((img == 0.0).all(axis=2))
-    white_percentage = tree_crowns["tree_img"].apply(white_calculator)
+            #getting tree crown image from site image
+            tree_image = site_img[ymin:ymax, xmin:xmax, :3]
+            assert tree_image.shape[-1] == 3
+            
+            #computing proportion of white pixels in tree crown image
+            white_percentage[i] = np.mean((tree_image == 0.0).all(axis=2))
 
+            #saving tree crown image
+            image_path = paths["dataset"] + f"tree_crowns/{i}.png"
+            tree_crowns.iloc[i, 0] = image_path
+           
+           #imsave(image_path, tree_image)
+            tree_image = Image.fromarray(tree_image)
+            tree_image.save(image_path)
+            
+
+    #filtering out of bounds tree crowns
     white_threshold = 0.8
-    tree_crowns_filtered = tree_crowns.loc[white_percentage< (white_threshold)]
+    tree_crowns_filtered = tree_crowns.loc[white_percentage < (white_threshold)]
     tree_crowns_filtered = tree_crowns_filtered.reset_index(drop=True)
     logging.info(f"Only {len(tree_crowns_filtered)}/{len(tree_crowns)} of the bounding boxes were inside the site boundaries")
 
     #Adding carbon values from matched field data
-    matches, carbon = matching(tree_crowns_filtered.drop(columns="tree_img", axis=1), field_data)
+    matches, carbon = matching(tree_crowns_filtered, field_data)
 
     tree_crowns_filtered["matches"] = matches
     tree_crowns_filtered["carbon"] = carbon.to_numpy()
 
     # Padding/Cropping the images so that they are all of size 800x800 (as in the paper)
-    transform = Compose([ToTensor(), CenterCrop(800)])
-    tree_crowns_filtered["tree_img"] = tree_crowns_filtered["tree_img"].apply(transform)
+    #transform = Compose([ToTensor(), CenterCrop(800)])
+    #tree_crowns_filtered["tree_img"] = tree_crowns_filtered["tree_img"].apply(transform)
     tree_crowns_filtered.to_csv(paths["dataset"] + "benchmark_dataset.csv")
 
     assert tree_crowns_filtered.carbon.isna().sum() == 0
@@ -200,6 +233,7 @@ class TreeCrown(Dataset):
     def __init__(self, df, transform=None):
         self.df = df
         self.transform = transform
+        self.pretransform = Compose([ToTensor(), CenterCrop(800)])
 
     def __len__(self):
         return len(self.df)
@@ -210,14 +244,47 @@ class TreeCrown(Dataset):
         in self.df.
         """
         site = self.df["site"][item]
-        image =  self.df["tree_img"][item]
-        carbon = self.df["carbon"][item]
+        image =  Image.open(self.df["path"][item])
+        image = self.pretransform(image) #transform image to tensor
+        
+        assert image.shape[0] == 3
 
+        carbon = self.df["carbon"][item]
 
         if self.transform is not None:
             image = self.transform(image)
 
         return image, carbon, site, 0
+
+
+def create_split_dataframe(path: str, data, splits):
+    """
+    Creating a dataframe and splitting it into training, , validating and testing
+    """
+
+    train_dataset = pd.DataFrame(data=None, columns=data.columns)
+    val_dataset = pd.DataFrame(data=None, columns=data.columns)
+    test_dataset = pd.DataFrame(data=None, columns=data.columns)
+    train_val_test= np.zeros(len(data))
+
+    for i in range(len(data)):
+        if data["site"][i] in splits["training"]:
+            train_val_test[i]= 1
+        if data["site"][i] in splits["testing"]:
+            train_val_test[i]=2
+        if data["site"][i] in splits["validation"]:
+            train_val_test[i] = 3
+
+    train_dataset= data.loc[train_val_test==1]
+    test_dataset= data.loc[train_val_test==2]
+    val_dataset= data.loc[train_val_test==3]
+
+    train_dataset = train_dataset.reset_index(drop=True)
+    val_dataset = val_dataset.reset_index(drop=True)
+    test_dataset = test_dataset.reset_index(drop=True)
+
+    return train_dataset, val_dataset, test_dataset
+
 
 def train_val_test_dataset_benchmark(data, splits, transform=None):
     """

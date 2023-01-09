@@ -14,20 +14,22 @@ from parts.helper.datacreation import create_data
 from parts.evaluation import report_results, plot_losses
 
 def main():
-    path_to_main = os.path.dirname(__file__) 
-    logging.basicConfig(filename=path_to_main + "/pipeline.log", level=logging.INFO, 
-            filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
 
     #TODO: Change to the right config file for the right run
-    with open(f"{path_to_main}/configs/benchmark.json", "r") as cfg:
+    with open("configs/benchmark.json", "r") as cfg:
         hyperparameters = json.load(cfg)
+    
+    
+    logging.basicConfig(filename= "pipeline.log" , level=logging.INFO, 
+            filemode="w", format="[%(asctime)s | %(levelname)s] %(message)s")
+
 
     #Setting paths to local scratch when running on cluster
     if hyperparameters["cluster"]:
         logging.info("Changing paths to compute node local scratch: %s", os.environ.get("TMPDIR"))
         paths = {
                 "dataset" : os.environ.get("TMPDIR") + "/",
-                "reforestree" : os.environ.get("TMPDIR") + "/reforestree/"
+                "reforestree" : "/cluster/work/igp_psr/ai4good/group-3b/reforestree/"
         }
     else:
         paths = {
@@ -35,7 +37,7 @@ def main():
             "reforestree" : hyperparameters["reforestree"]
         }
 
-    trees = pd.read_csv(paths["reforestree"] + "/field_data.csv")
+    trees = pd.read_csv(paths["reforestree"] + "field_data.csv")
     trees = trees[["site", "X", "Y", "lat", "lon", "carbon"]]
 
     if hyperparameters["create_dataset"]:
@@ -45,7 +47,7 @@ def main():
         data = process(trees.site.unique(), hyperparameters, paths)
     if hyperparameters["benchmark_dataset"]:
         # benchmark_dataset
-        data = create_benchmark_dataset(paths)
+        data = create_benchmark_dataset(hyperparameters, paths)
     else:
         data= pd.read_csv(paths["dataset"]+"patches_df.csv", usecols=["carbon", "path", "site", "rotation", "patch size", "site_index"])
 
@@ -70,7 +72,7 @@ def main():
         "log_interval": 20,
         "device": "cpu",
         "optimizer": "amsgrad",
-        "batch_size": 64
+        "batch_size": 16
     }
 
     if torch.cuda.is_available():
@@ -103,6 +105,7 @@ def main():
         logging.info("Testing on site number {}".format(splits["testing"]))
        
         if hyperparameters["benchmark_dataset"]:
+            logging.info("Loading dataset")
             train_loader, val_loader, test_loader = train_val_test_dataloader_benchmark(data, splits=splits,
                                                                                         batch_size=training_hyperparameters["batch_size"], transform=transform)
         else:

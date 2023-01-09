@@ -32,7 +32,7 @@ def create_data(paths, hyperparameters, trees):
     # creating folder "paths["dataset"]/processed" if it doesn't exist
     if not os.path.exists(paths["dataset"] + "sites"):
         logging.info("Creating directory %s", paths["dataset"] + "sites")
-        os.makedirs(paths["dataset"] + "sites")
+        os.mkdir(paths["dataset"] + "sites")
 
     for site in trees.site.unique():
         logging.info("Creating data for site %s", site)

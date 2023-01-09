@@ -3,12 +3,10 @@
 #SBATCH --tmp=100G
 #SBATCH --nodes=1
 #SBATCH --mem-per-cpu=12G
-#SBATCH --gpus=1
 #SBATCH --time=4:00:00
+#SBATCH --gpus=1
 
 
-source PATH_TO_ENV/bin/activate
-mkdir ${TMPDIR}/reforestree
+source /cluster/home/jabohl/ai4good/env/bin/activate
 mkdir ${TMPDIR}/dataset
-rsync -raq PATH_TO_REFORESTREE/* ${TMPDIR}/reforestree/.
 python3 main.py 

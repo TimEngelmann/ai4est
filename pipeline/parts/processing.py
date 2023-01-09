@@ -62,14 +62,20 @@ def process_site(df, hyperparameters, paths, site):
         df_angle["site"] = [site] * len(df_angle)
         df_angle["patch size"] = [patch_size] * len(df_angle)
 
-        carbon = rotate(carbon_0, angle)
-        img = rotate(img_0, angle)
+        if angle != 0:
+            carbon = rotate(carbon_0, angle)
+            img = rotate(img_0, angle)
     
-        patches = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
-        carbon_patches = carbon.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
-        df_angle["carbon"] = carbon_patches.sum(dim=(-1,-2)).reshape(-1)         
+            patches = img.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+            carbon_patches = carbon.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+            df_angle["carbon"] = carbon_patches.sum(dim=(-1,-2)).reshape(-1)         
+            del carbon_patches
 
-        del carbon_patches
+        else:
+            patches = img_0.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+            carbon_patches = carbon_0.unfold(1, patch_size,  patch_size).unfold(2, patch_size, patch_size)
+            df_angle["carbon"] = carbon_patches.sum(dim=(-1,-2)).reshape(-1)         
+            del carbon_patches
 
         #filtering empty patches
         logging.info("Filtering white patches")
