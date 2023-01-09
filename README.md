@@ -1,4 +1,4 @@
-# AI4good_re4estree
+# AI4good_ai4est
 
 Automating the estimation of carbon stock for forestry sites is an important yet challenging task due to the inherent diversity of the problem. Recently, the advancements in machine learning algorithms, and especially deep learning techniques, gave rise to previously unexplored solutions. However, in order to tackle this problem using deep learning, it is necessary to combine efforts and collaborate. With that aim in mind, the benchmark forestry dataset ReforesTree was created using a collection of diligently hand collected measurements and drone images. In the current work, we further explore ReforesTree and strive to bring light to its shortcomings and limitations. We propose a collection of approaches for estimating carbon stock from drone images, while tackling the GPS noise, matching discrepancies and outlying samples found in the original ReforesTree dataset.
 
@@ -38,7 +38,7 @@ If the code shall be run on the cluster the necessary steps differ slightly
   
 ## Results
 
-For every experimental run a set of results is produced that can be found inside the results folder and can be broken down into the parts presented below. For each one of the files found in the results folder, a constant convention is followed. The name of the file indicated the site used for testing the model when the later was trained on the other 5 sites of the dataset.
+For every experimental run a set of results is produced that can be found inside the results folder. For each one of the files found in the results folder, a constant convention is followed. The name of the file indicates the site used for testing the model when the later was trained on the other 5 sites of the dataset. Please note that some of the files (in particular most csv files) are produced during the run of the pipeline. To have access to all of the files mentioned below (in particular the plots), it is necessary to execute the `plots_report.ipynb` notebook. Simply specify the `run_name` in the second cell of the notebook and execute it. Afterwards the content of the folder can be broken down into the parts presented below.
 
   1. The csv folder contains the following:
       
@@ -55,3 +55,27 @@ For every experimental run a set of results is produced that can be found inside
       - The losses folder contains 6 pdf files and 6 png files. The pdf files present the plotting of the loss per epoch for each run. The png files present the exact same plotting while also giving a comparison between the current run and all the previous ones.
     
       - The predictions folder contains three different types of pdf files, 6 for each type. First, predictions_*site name* RGB.pdf gives a visual representation of the ground truth carbon distribution as well as the one predicted by the model. Second, predictions_hist_*site name* RGB.pdf contains the histograms of the target and predicted values for the model. Third, predictions_sorted_*site name* RGB is equivalent to predictions_*site name* RGB.pdf, but instead of plotting the results on the site images, the target values are sorted and compared directly to the model's predictions.
+
+## Code Structure
+Here we want to provide an overview of the structure and most important parts of the repository.
+
+```
+.
+├── data                        
+│   ├── annotations             # Our hand annotations for one site 
+│   ├── dataset                 # Will be created when running the pipeline 
+│   └── reforestree             # Original data to be downloaded as described    
+|   └── ...             
+├── exploration                 # Jupyter notebooks for data analysis
+│   ├── plots_report.ipynb      # Notebook to create plots of run results
+│   ├── data_ground_truth.ipynb # Notebook analyzing GPS error, carbon and boundaries
+│   ├── analyse_matching.ipynb  # Notebook for initial matching analysis
+|   └── ...
+├── pipeline                    # Main code
+│   ├── configs                 # Predefined config files for experiments described in report
+│   ├── parts                   # All parts of the pipeline
+│   ├── main.py                 # Execute this file to run the pipeline
+|   └── ...
+├── results                     # Already contains csv files of our experiments
+└── ...
+```
