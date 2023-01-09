@@ -4,8 +4,9 @@ data/reforestree
 data/trees
 data/annotations/Leonor Aspiazu RGB/other_format
 
-#ignore results
+#ignore results and runs
 results
+runs
 
 *.ipynb_checkpoints
 *.DS_Store
