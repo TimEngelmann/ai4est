@@ -74,6 +74,7 @@ Here we want to provide an overview of the structure and most important parts of
 │   ├── dataset                 # Will be created when running the pipeline 
 │   └── reforestree             # Original data to be downloaded as described    
 |   └── ...             
+├── documentation               # Contains final project report and presentation
 ├── exploration                 # Jupyter notebooks for data analysis
 │   ├── plots_report.ipynb      # Notebook to create plots of run results
 │   ├── data_ground_truth.ipynb # Notebook analyzing GPS error, carbon and boundaries
